@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IntelliTicket - Service Request & Intelligent Prioritization Platform</title>
+  <title>IntelliTicket - Intelligent Service Request & Prioritization Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #070a12;
+      --bg-dark: #070913;
       --card-bg: rgba(15, 23, 42, 0.75);
-      --card-border: rgba(255, 255, 255, 0.09);
+      --card-border: rgba(255, 255, 255, 0.08);
       --accent: #6366f1;
       --accent-glow: rgba(99, 102, 241, 0.4);
       --p1-red: #ef4444;
-      --p1-glow: rgba(239, 68, 68, 0.35);
+      --p1-bg: rgba(239, 68, 68, 0.15);
       --p2-amber: #f59e0b;
+      --p2-bg: rgba(245, 158, 11, 0.15);
       --p3-blue: #3b82f6;
+      --p3-bg: rgba(59, 130, 246, 0.15);
       --p4-slate: #64748b;
+      --p4-bg: rgba(100, 116, 139, 0.15);
       --success: #10b981;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
@@ -31,44 +34,44 @@
       color: var(--text-main);
       min-height: 100vh;
       background-image: 
-        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.05) 0%, transparent 60%);
+        radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.18) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.14) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.06) 0%, transparent 60%);
       background-attachment: fixed;
     }
 
     header {
-      padding: 18px 36px;
+      padding: 16px 36px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--card-border);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(9, 13, 22, 0.8);
+      background: rgba(7, 9, 19, 0.85);
     }
 
     .logo-box {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
     .logo-badge {
-      background: linear-gradient(135deg, #4f46e5, #06b6d4);
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 18px;
+      font-size: 20px;
       color: white;
-      box-shadow: 0 0 20px var(--accent-glow);
+      box-shadow: 0 0 24px var(--accent-glow);
     }
-    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .brand-title { font-size: 19px; font-weight: 800; letter-spacing: -0.5px; }
     .brand-subtitle { font-size: 12px; color: var(--text-muted); }
 
     .header-actions {
@@ -79,7 +82,7 @@
 
     .btn {
       padding: 9px 18px;
-      border-radius: 8px;
+      border-radius: 9px;
       font-weight: 600;
       font-size: 13px;
       cursor: pointer;
@@ -91,11 +94,11 @@
       text-decoration: none;
     }
     .btn-primary {
-      background: #4f46e5;
+      background: #6366f1;
       color: white;
       box-shadow: 0 4px 14px var(--accent-glow);
     }
-    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+    .btn-primary:hover { background: #4f46e5; transform: translateY(-1px); }
     .btn-outline {
       background: rgba(255,255,255,0.05);
       border-color: var(--card-border);
@@ -110,77 +113,130 @@
     .btn-seed:hover { background: rgba(16, 185, 129, 0.25); }
 
     .container {
-      max-width: 1400px;
-      margin: 28px auto;
+      max-width: 1440px;
+      margin: 24px auto;
       padding: 0 24px;
     }
 
+    /* Stats Grid */
     .grid-stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       gap: 16px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 14px;
-      padding: 20px;
-      backdrop-filter: blur(10px);
+      padding: 18px 20px;
+      backdrop-filter: blur(12px);
       position: relative;
       overflow: hidden;
+      transition: transform 0.2s ease;
     }
+    .stat-card:hover { transform: translateY(-2px); }
     .stat-card::before {
       content: "";
       position: absolute;
       top: 0; left: 0; right: 0; height: 3px;
-      background: var(--stat-color, #4f46e5);
+      background: var(--stat-color, #6366f1);
     }
-    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
-    .stat-val { font-size: 32px; font-weight: 800; margin: 8px 0 4px 0; color: #fff; font-family: 'JetBrains Mono', monospace; }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+    .stat-val { font-size: 32px; font-weight: 800; margin: 6px 0 2px 0; color: #fff; font-family: 'JetBrains Mono', monospace; }
     .stat-hint { font-size: 11px; color: var(--text-muted); }
 
     .main-layout {
       display: grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 420px 1fr;
       gap: 24px;
     }
-    @media (max-width: 1024px) {
+    @media (max-width: 1100px) {
       .main-layout { grid-template-columns: 1fr; }
     }
 
     .panel {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 24px;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
     }
 
     .panel-title {
       font-size: 16px;
       font-weight: 700;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
     .panel-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       line-height: 1.4;
     }
 
+    /* Template Chips */
+    .template-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .chip {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 11px;
+      color: #cbd5e1;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .chip:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: #6366f1;
+      color: #fff;
+    }
+
+    /* Live Prediction Gauge */
+    .prediction-box {
+      background: rgba(10, 15, 29, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .score-meter-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      margin-top: 6px;
+      overflow: hidden;
+      width: 160px;
+    }
+    .score-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #ef4444);
+      transition: width 0.3s ease;
+    }
+
     /* Form Styles */
-    .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: #cbd5e1; }
     input, select, textarea {
       width: 100%;
-      background: rgba(10, 15, 29, 0.7);
+      background: rgba(9, 14, 26, 0.8);
       border: 1px solid var(--card-border);
       border-radius: 8px;
-      padding: 10px 14px;
+      padding: 9px 12px;
       color: #fff;
       font-size: 13px;
       font-family: inherit;
@@ -189,25 +245,25 @@
     }
     input:focus, select:focus, textarea:focus {
       border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
     }
-    textarea { resize: vertical; min-height: 75px; }
+    textarea { resize: vertical; min-height: 70px; }
 
     .checkbox-wrap {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 4px;
+      margin-top: 6px;
       cursor: pointer;
     }
     .checkbox-wrap input { width: auto; }
 
-    /* Filters & Controls */
+    /* Filters Bar */
     .filters-bar {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 18px;
+      gap: 8px;
+      margin-bottom: 16px;
       align-items: center;
       justify-content: space-between;
     }
@@ -217,7 +273,7 @@
       flex-wrap: wrap;
     }
     .pill {
-      padding: 6px 12px;
+      padding: 5px 12px;
       font-size: 12px;
       font-weight: 600;
       border-radius: 20px;
@@ -228,14 +284,15 @@
       transition: all 0.2s ease;
     }
     .pill.active {
-      background: #4f46e5;
+      background: #6366f1;
       color: #fff;
-      border-color: #4f46e5;
+      border-color: #6366f1;
+      box-shadow: 0 2px 10px var(--accent-glow);
     }
 
     .search-input {
-      max-width: 260px;
-      padding: 7px 12px;
+      max-width: 240px;
+      padding: 6px 12px;
       font-size: 12px;
     }
 
@@ -244,12 +301,12 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 750px;
+      max-height: 780px;
       overflow-y: auto;
       padding-right: 4px;
     }
     .ticket-card {
-      background: rgba(14, 21, 37, 0.6);
+      background: rgba(14, 21, 37, 0.65);
       border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 16px;
@@ -258,7 +315,7 @@
     }
     .ticket-card:hover {
       border-color: rgba(99, 102, 241, 0.4);
-      background: rgba(18, 27, 48, 0.8);
+      background: rgba(19, 29, 52, 0.85);
       transform: translateY(-2px);
     }
     .ticket-card.P1_CRITICAL { border-left: 4px solid var(--p1-red); }
@@ -305,10 +362,10 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
-    .badge-p1 { background: var(--p1-bg); color: var(--p1-red); border: 1px solid rgba(239, 68, 68, 0.3); }
-    .badge-p2 { background: var(--p2-bg); color: var(--p2-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-p3 { background: var(--p3-bg); color: var(--p3-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
-    .badge-p4 { background: var(--p4-bg); color: var(--p4-slate); border: 1px solid rgba(100, 116, 139, 0.3); }
+    .badge-p1 { background: var(--p1-bg); color: var(--p1-red); border: 1px solid rgba(239, 68, 68, 0.35); }
+    .badge-p2 { background: var(--p2-bg); color: var(--p2-amber); border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-p3 { background: var(--p3-bg); color: var(--p3-blue); border: 1px solid rgba(59, 130, 246, 0.35); }
+    .badge-p4 { background: var(--p4-bg); color: var(--p4-slate); border: 1px solid rgba(100, 116, 139, 0.35); }
 
     .badge-status {
       background: rgba(255,255,255,0.06);
@@ -357,12 +414,12 @@
       border-radius: 6px;
     }
 
-    /* Modal / Drawer */
+    /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(6px);
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
       display: none;
       align-items: center;
       justify-content: center;
@@ -370,7 +427,7 @@
     }
     .modal-overlay.active { display: flex; }
     .modal-box {
-      background: #0f172a;
+      background: #0d1322;
       border: 1px solid var(--card-border);
       border-radius: 16px;
       width: 90%;
@@ -378,10 +435,11 @@
       padding: 28px;
       max-height: 85vh;
       overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     }
     .reasoning-box {
-      background: rgba(79, 70, 229, 0.1);
-      border: 1px solid rgba(79, 70, 229, 0.3);
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
       border-radius: 10px;
       padding: 14px;
       margin: 14px 0;
@@ -395,9 +453,31 @@
       gap: 10px;
     }
     .timeline-row {
-      border-left: 2px solid #4f46e5;
+      border-left: 2px solid #6366f1;
       padding-left: 12px;
       font-size: 12px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e1b4b;
+      border: 1px solid #6366f1;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 2000;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     /* Scrollbar */
@@ -413,15 +493,15 @@
       <div class="logo-badge">⚡</div>
       <div>
         <div class="brand-title">IntelliTicket Engine</div>
-        <div class="brand-subtitle">AI-Driven Prioritization & SLA Triage</div>
+        <div class="brand-subtitle">AI-Driven Prioritization & SLA Triage Platform</div>
       </div>
     </div>
     <div class="header-actions">
       <button class="btn btn-seed" id="btn-seed" onclick="seedDemoData()">
-        <span>⚡ Seed Realistic Demo Data</span>
+        <span>⚡ Reset / Seed Demo Data</span>
       </button>
       <a href="/docs" target="_blank" class="btn btn-outline">
-        <span>📖 FastAPI Swagger API</span>
+        <span>📖 FastAPI Swagger Docs</span>
       </a>
     </div>
   </header>
@@ -430,27 +510,27 @@
     <!-- Top KPI Stats -->
     <div class="grid-stats">
       <div class="stat-card" style="--stat-color: #ef4444;">
-        <div class="stat-label">Critical P1 Queue</div>
+        <div class="stat-label">🚨 Critical P1 Queue</div>
         <div class="stat-val" id="stat-p1">0</div>
-        <div class="stat-hint">Immediate action required (&lt;2h SLA)</div>
+        <div class="stat-hint">Immediate action (&lt;2h SLA)</div>
       </div>
       <div class="stat-card" style="--stat-color: #f59e0b;">
-        <div class="stat-label">High P2 Queue</div>
+        <div class="stat-label">⚠️ High P2 Queue</div>
         <div class="stat-val" id="stat-p2">0</div>
         <div class="stat-hint">Department blockers (&lt;6h SLA)</div>
       </div>
       <div class="stat-card" style="--stat-color: #ef4444;">
-        <div class="stat-label">SLA Breached</div>
+        <div class="stat-label">🔥 SLA Breached</div>
         <div class="stat-val" id="stat-breached">0</div>
-        <div class="stat-hint">Exceeded deadline targets</div>
+        <div class="stat-hint">Exceeded resolution targets</div>
       </div>
       <div class="stat-card" style="--stat-color: #38bdf8;">
-        <div class="stat-label">Avg Prioritization Score</div>
+        <div class="stat-label">⚡ Avg Priority Score</div>
         <div class="stat-val" id="stat-avg-score">0.0</div>
-        <div class="stat-hint">Calculated across 0-100 composite index</div>
+        <div class="stat-hint">0–100 Weighted blast index</div>
       </div>
       <div class="stat-card" style="--stat-color: #10b981;">
-        <div class="stat-label">Total Ingested Tickets</div>
+        <div class="stat-label">📊 Active Tickets</div>
         <div class="stat-val" id="stat-total">0</div>
         <div class="stat-hint" id="stat-resolved">0 Resolved</div>
       </div>
@@ -458,29 +538,52 @@
 
     <!-- Main Grid -->
     <div class="main-layout">
-      <!-- Left: Ticket Ingestion Simulator -->
+      <!-- Left: Ticket Ingestion & Live AI Predictor -->
       <div class="panel">
         <div class="panel-title">
-          <span>🚀 Ingest Service Request</span>
+          <span>🚀 Ingest & Score Request</span>
         </div>
         <div class="panel-desc">
-          Test intelligent priority scoring in real-time. The engine parses urgency phrasing, impact scope, and VIP tier.
+          Click a quick template or type your own request to see real-time AI prioritization scoring.
+        </div>
+
+        <!-- Quick Demo Templates -->
+        <label style="margin-bottom: 8px;">Quick Demo Scenarios:</label>
+        <div class="template-bar">
+          <button class="chip" onclick="fillTemplate('db_crash')">🚨 Payment Outage</button>
+          <button class="chip" onclick="fillTemplate('payroll')">💼 Payroll Locked</button>
+          <button class="chip" onclick="fillTemplate('vpn')">🛡️ VPN Down (London)</button>
+          <button class="chip" onclick="fillTemplate('mouse')">🖱️ Mouse Request</button>
+        </div>
+
+        <!-- Live Score Gauge -->
+        <div class="prediction-box">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #818cf8; text-transform: uppercase;">Real-Time AI Estimate</div>
+            <div id="pred-label" style="font-size: 14px; font-weight: 800; color: #fff;">Type below to preview...</div>
+          </div>
+          <div>
+            <div id="pred-score" style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 800; color: #38bdf8; text-align: right;">--/100</div>
+            <div class="score-meter-bar">
+              <div class="score-fill" id="pred-fill"></div>
+            </div>
+          </div>
         </div>
 
         <form id="ticket-form" onsubmit="handleCreateTicket(event)">
           <div class="form-group">
             <label>Request Title</label>
-            <input type="text" id="title" required placeholder="e.g. Production Payment DB Down" />
+            <input type="text" id="title" required placeholder="e.g. Production Payment DB Down" oninput="updateLivePrediction()" />
           </div>
 
           <div class="form-group">
-            <label>Detailed Description</label>
-            <textarea id="description" required placeholder="Describe issue, symptoms, urgency keywords..."></textarea>
+            <label>Detailed Description (Symptoms & Impact)</label>
+            <textarea id="description" required placeholder="Describe issue, urgency keywords, errors..." oninput="updateLivePrediction()"></textarea>
           </div>
 
           <div class="form-group">
             <label>Blast Radius / Impact Scope</label>
-            <select id="impact_scope">
+            <select id="impact_scope" onchange="updateLivePrediction()">
               <option value="ORGANIZATION">Organization / Whole Company Outage (+30 pts)</option>
               <option value="TEAM">Team / Department Affected (+20 pts)</option>
               <option value="INDIVIDUAL" selected>Individual Employee Only (+10 pts)</option>
@@ -489,16 +592,16 @@
 
           <div class="form-group">
             <label>Business Criticality</label>
-            <select id="business_criticality">
+            <select id="business_criticality" onchange="updateLivePrediction()">
               <option value="SEVERE">Severe (Revenue/Security Blocked) (+30 pts)</option>
-              <option value="HIGH">High (Key Workflow Stopped) (+22 pts)</option>
-              <option value="MEDIUM" selected>Medium (Standard Task) (+14 pts)</option>
+              <option value="HIGH">High (Key Business Workflow Stopped) (+22 pts)</option>
+              <option value="MEDIUM" selected>Medium (Standard Task with Workaround) (+14 pts)</option>
               <option value="LOW">Low (Trivial / Cosmetic) (+5 pts)</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label>Requester Name & Department</label>
+            <label>Requester Details</label>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <input type="text" id="req_name" required placeholder="Name" value="Rahul Sharma" />
               <input type="text" id="req_dept" required placeholder="Dept" value="Engineering" />
@@ -507,18 +610,18 @@
               <input type="email" id="req_email" required placeholder="Email" value="rahul@company.com" />
             </div>
             <label class="checkbox-wrap" style="margin-top: 8px;">
-              <input type="checkbox" id="req_is_vip" />
+              <input type="checkbox" id="req_is_vip" onchange="updateLivePrediction()" />
               <span>VIP Executive / Director (+10 pts)</span>
             </label>
           </div>
 
-          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;">
-            <span>⚡ Ingest & Prioritize Request</span>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 6px;">
+            <span>⚡ Ingest & Auto-Prioritize Request</span>
           </button>
         </form>
       </div>
 
-      <!-- Right: Prioritized Ticket Feed -->
+      <!-- Right: Prioritized Ticket Queue -->
       <div class="panel">
         <div class="filters-bar">
           <div class="filter-pills">
@@ -541,7 +644,7 @@
     </div>
   </div>
 
-  <!-- Detail Modal -->
+  <!-- Detail Inspector Modal -->
   <div class="modal-overlay" id="detail-modal" onclick="closeModal(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
@@ -558,21 +661,123 @@
       </div>
 
       <div style="margin-top: 16px;">
-        <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px;">📜 Audit Trail & Lifecycle Timeline</div>
+        <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px;">📜 Lifecycle Audit Trail</div>
         <div class="timeline-list" id="modal-timeline"></div>
       </div>
 
       <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-        <button class="btn btn-outline btn-sm" id="modal-btn-progress" onclick="modalChangeStatus('IN_PROGRESS')">Set In Progress</button>
-        <button class="btn btn-primary btn-sm" id="modal-btn-resolve" onclick="modalChangeStatus('RESOLVED')">Mark Resolved</button>
+        <button class="btn btn-outline btn-sm" onclick="modalChangeStatus('IN_PROGRESS')">Set In Progress</button>
+        <button class="btn btn-primary btn-sm" onclick="modalChangeStatus('RESOLVED')">✓ Mark Resolved</button>
       </div>
     </div>
   </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast-box">Action completed successfully!</div>
 
   <script>
     let currentFilter = 'ALL';
     let searchQuery = '';
     let currentModalTicket = null;
+
+    const TEMPLATES = {
+      db_crash: {
+        title: "CRITICAL: Live Payment Gateway Webhook Failing - Orders Blocked",
+        desc: "Stripe and Razorpay checkout webhooks are throwing 500 internal server errors. Active customers unable to place orders. Urgent production outage!",
+        scope: "ORGANIZATION",
+        crit: "SEVERE",
+        vip: true,
+        name: "Sarah Jenkins",
+        dept: "E-Commerce Ops",
+        email: "sarah@company.com"
+      },
+      payroll: {
+        title: "URGENT: Payroll database authentication token expired before salary payout",
+        desc: "Payday is tomorrow at 9 AM and salary batch disbursement token is locked. 400 employees blocked from receiving salary.",
+        scope: "ORGANIZATION",
+        crit: "SEVERE",
+        vip: true,
+        name: "Michael Scott",
+        dept: "Human Resources",
+        email: "m.scott@company.com"
+      },
+      vpn: {
+        title: "London Office VPN gateway unresponsive for all 55 engineers",
+        desc: "Entire engineering department in London branch disconnected from corporate VPN. Unable to access internal repos or cloud servers.",
+        scope: "TEAM",
+        crit: "HIGH",
+        vip: false,
+        name: "David Miller",
+        dept: "Engineering",
+        email: "david.m@company.com"
+      },
+      mouse: {
+        title: "Request for replacement wireless mouse and batteries",
+        desc: "My wireless mouse scroll wheel is sticking intermittently. Would like a replacement when convenient.",
+        scope: "INDIVIDUAL",
+        crit: "LOW",
+        vip: false,
+        name: "Vikram Sethi",
+        dept: "Marketing",
+        email: "vikram@company.com"
+      }
+    };
+
+    function fillTemplate(key) {
+      const t = TEMPLATES[key];
+      if (!t) return;
+      document.getElementById('title').value = t.title;
+      document.getElementById('description').value = t.desc;
+      document.getElementById('impact_scope').value = t.scope;
+      document.getElementById('business_criticality').value = t.crit;
+      document.getElementById('req_is_vip').checked = t.vip;
+      document.getElementById('req_name').value = t.name;
+      document.getElementById('req_dept').value = t.dept;
+      document.getElementById('req_email').value = t.email;
+      updateLivePrediction();
+      showToast("Template loaded: " + t.title.substring(0, 30) + "...");
+    }
+
+    function updateLivePrediction() {
+      const title = document.getElementById('title').value.toLowerCase();
+      const desc = document.getElementById('description').value.toLowerCase();
+      const full = title + " " + desc;
+
+      const scope = document.getElementById('impact_scope').value;
+      const crit = document.getElementById('business_criticality').value;
+      const isVip = document.getElementById('req_is_vip').checked;
+
+      if (!title && !desc) {
+        document.getElementById('pred-label').innerText = "Type below to preview...";
+        document.getElementById('pred-score').innerText = "--/100";
+        document.getElementById('pred-fill').style.width = "0%";
+        return;
+      }
+
+      let urg = 5;
+      const criticalWords = ["down", "outage", "crashed", "emergency", "blocked", "payroll", "production", "breach", "failing"];
+      const highWords = ["asap", "urgent", "deadline", "broken", "critical", "corrupted"];
+
+      if (criticalWords.some(w => full.includes(w))) urg = 30;
+      else if (highWords.some(w => full.includes(w))) urg = 22;
+      else if (full.length > 20) urg = 14;
+
+      const scopePts = scope === 'ORGANIZATION' ? 30 : (scope === 'TEAM' ? 20 : 10);
+      const critPts = crit === 'SEVERE' ? 30 : (crit === 'HIGH' ? 22 : (crit === 'MEDIUM' ? 14 : 5));
+      const vipPts = isVip ? 10 : 0;
+
+      const total = Math.min(100, urg + scopePts + critPts + vipPts);
+
+      let label = "P4 Low (72h SLA)";
+      let color = "#64748b";
+      if (total >= 75) { label = "🚨 P1 Critical (2h SLA)"; color = "#ef4444"; }
+      else if (total >= 55) { label = "⚠️ P2 High (6h SLA)"; color = "#f59e0b"; }
+      else if (total >= 35) { label = "🔷 P3 Medium (24h SLA)"; color = "#3b82f6"; }
+
+      document.getElementById('pred-label').innerHTML = `<span style="color:${color}; font-weight:800;">${label}</span>`;
+      document.getElementById('pred-score').innerText = `${total}/100`;
+      document.getElementById('pred-fill').style.width = `${total}%`;
+    }
 
     async function fetchStats() {
       try {
@@ -619,7 +824,7 @@
       if (!tickets || tickets.length === 0) {
         list.innerHTML = `
           <div style="text-align: center; color: var(--text-muted); padding: 50px;">
-            No service requests found matching this filter. Click "Seed Realistic Demo Data" above!
+            No service requests found matching this filter. Click "Reset / Seed Demo Data" above!
           </div>
         `;
         return;
@@ -685,8 +890,10 @@
           const created = await res.json();
           document.getElementById('title').value = '';
           document.getElementById('description').value = '';
+          updateLivePrediction();
           await fetchStats();
           await fetchTickets();
+          showToast(`✅ Ingested ticket #${created.ticket_id} (${created.priority})`);
           openDetails(created.ticket_id);
         } else {
           alert("Error creating ticket. Check inputs.");
@@ -705,6 +912,7 @@
         });
         await fetchStats();
         await fetchTickets();
+        showToast(`✓ Ticket #${ticketId} marked as RESOLVED`);
       } catch (err) {
         console.error(err);
       }
@@ -720,8 +928,8 @@
         document.getElementById('modal-title').innerText = t.title;
         document.getElementById('modal-desc').innerText = t.description;
         document.getElementById('modal-reasoning').innerHTML = `
-          <strong>Reasoning:</strong> ${t.priority_breakdown.reasoning}<br/>
-          ${t.priority_breakdown.detected_urgency_keywords.length > 0 ? `<strong>Urgency Keywords Triggered:</strong> <span style="color:#f87171;">${t.priority_breakdown.detected_urgency_keywords.join(', ')}</span>` : ''}
+          <strong>Decision Reasoning:</strong> ${t.priority_breakdown.reasoning}<br/>
+          ${t.priority_breakdown.detected_urgency_keywords.length > 0 ? `<strong>Triggered Keywords:</strong> <span style="color:#f87171;">${t.priority_breakdown.detected_urgency_keywords.join(', ')}</span>` : ''}
         `;
 
         document.getElementById('modal-score-chips').innerHTML = `
@@ -729,7 +937,7 @@
           <span class="badge badge-status">Scope: ${t.priority_breakdown.impact_score}/30</span>
           <span class="badge badge-status">Criticality: ${t.priority_breakdown.criticality_score}/30</span>
           <span class="badge badge-status">VIP Bonus: +${t.priority_breakdown.vip_bonus}</span>
-          <span class="badge" style="background:#4f46e5; color:#fff;">Total: ${t.priority_score}/100</span>
+          <span class="badge" style="background:#6366f1; color:#fff;">Total: ${t.priority_score}/100</span>
         `;
 
         document.getElementById('modal-timeline').innerHTML = t.timeline.map(item => `
@@ -762,6 +970,7 @@
       closeModalDirect();
       await fetchStats();
       await fetchTickets();
+      showToast(`Status updated to ${status}`);
     }
 
     async function seedDemoData() {
@@ -770,13 +979,13 @@
       try {
         const res = await fetch('/api/v1/tickets/seed', { method: 'POST' });
         const data = await res.json();
-        alert(`Success! ${data.inserted_count} realistic enterprise tickets loaded into MongoDB.`);
+        showToast(`⚡ Seeded ${data.inserted_count} enterprise tickets into MongoDB!`);
         await fetchStats();
         await fetchTickets();
       } catch (err) {
         alert("Seed failed: " + err);
       } finally {
-        btn.innerText = '⚡ Seed Realistic Demo Data';
+        btn.innerText = '⚡ Reset / Seed Demo Data';
       }
     }
 
@@ -794,6 +1003,13 @@
         searchQuery = document.getElementById('search-input').value.trim();
         fetchTickets();
       }, 250);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast-box');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
     }
 
     function escapeHtml(text) {
