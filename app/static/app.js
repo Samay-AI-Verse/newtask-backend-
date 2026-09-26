@@ -1,6 +1,6 @@
 /**
  * IntelliTicket - Smarter Tickets. Faster Solutions.
- * Application Controller & Real-Time MongoDB Connector
+ * Application Controller & Real-Time MongoDB Connector with Professional Vector Icons
  */
 
 // Application State
@@ -87,12 +87,20 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPresets();
   setupLiveScoringSimulator();
   loadData();
+  refreshIcons();
 
   // Polling every 10s for real-time background sync
   setInterval(() => {
     loadData(false);
   }, 10000);
 });
+
+// Re-render Lucide Vector Icons
+function refreshIcons() {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+}
 
 // Dynamic Clock & Date in Header
 function initClock() {
@@ -174,6 +182,7 @@ async function loadTickets() {
     state.tickets = data.tickets || [];
     renderTicketsTable();
     updateLiveActivityStream();
+    refreshIcons();
   } catch (err) {
     console.error("Failed to fetch tickets:", err);
     const tbody = document.getElementById('tickets-table-body');
@@ -226,13 +235,13 @@ function renderTicketsTable() {
 
   tbody.innerHTML = state.tickets.map((t, index) => {
     const pIconClass = t.priority === 'P1_CRITICAL' ? 'p1' : (t.priority === 'P2_HIGH' ? 'p2' : (t.priority === 'P3_MEDIUM' ? 'p3' : 'p4'));
-    const pIconSymbol = t.priority === 'P1_CRITICAL' || t.priority === 'P2_HIGH' ? '!' : (t.priority === 'P3_MEDIUM' ? 'i' : '⚪');
+    const pLucideName = t.priority === 'P1_CRITICAL' ? 'alert-circle' : (t.priority === 'P2_HIGH' ? 'alert-triangle' : (t.priority === 'P3_MEDIUM' ? 'info' : 'minus-circle'));
     
     const prioLabel = t.priority === 'P1_CRITICAL' ? 'P1 Critical' : 
                      (t.priority === 'P2_HIGH' ? 'P2 High' : 
                      (t.priority === 'P3_MEDIUM' ? 'P3 Medium' : 'P4 Low'));
 
-    const categoryIcon = getCategoryIcon(t.category);
+    const categoryIcon = getCategoryLucideTag(t.category);
     const categoryName = formatCategoryName(t.category);
 
     const statusLabel = t.status === 'IN_PROGRESS' ? 'In Progress' : 
@@ -248,7 +257,9 @@ function renderTicketsTable() {
         <!-- 1. # Column -->
         <td>
           <div class="ticket-id-col">
-            <div class="ticket-priority-icon ${pIconClass}">${pIconSymbol}</div>
+            <div class="ticket-priority-icon ${pIconClass}">
+              <i data-lucide="${pLucideName}"></i>
+            </div>
             <span class="ticket-code-str">${formattedCode}</span>
           </div>
         </td>
@@ -264,7 +275,7 @@ function renderTicketsTable() {
         <!-- 3. Category -->
         <td>
           <div class="category-cell">
-            <span>${categoryIcon}</span>
+            ${categoryIcon}
             <span>${categoryName}</span>
           </div>
         </td>
@@ -282,7 +293,7 @@ function renderTicketsTable() {
         <!-- 6. SLA -->
         <td>
           <div class="sla-clock-cell">
-            <span>⏱️</span>
+            <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
             <span>${slaHours}</span>
           </div>
         </td>
@@ -295,7 +306,7 @@ function renderTicketsTable() {
         <!-- 8. Actions -->
         <td style="text-align: right;" onclick="event.stopPropagation()">
           <button class="action-dots-btn" onclick="openTicketInspector('${t.ticket_id}')" title="Inspect Ticket Details">
-            •••
+            <i data-lucide="more-horizontal"></i>
           </button>
         </td>
       </tr>
@@ -315,15 +326,15 @@ function formatTicketCode(ticketId, index) {
   return ticketId;
 }
 
-function getCategoryIcon(cat) {
+function getCategoryLucideTag(cat) {
   switch (cat) {
-    case 'IT_INFRASTRUCTURE': return '🖧';
-    case 'FINANCE_BILLING': return '💳';
-    case 'SECURITY_ACCESS': return '📶';
-    case 'SOFTWARE_APPLICATIONS': return '💻';
-    case 'FACILITIES_OFFICE': return '🏢';
-    case 'HR_PAYROLL': return '👥';
-    default: return '🖥️';
+    case 'IT_INFRASTRUCTURE': return '<i data-lucide="server"></i>';
+    case 'FINANCE_BILLING': return '<i data-lucide="credit-card"></i>';
+    case 'SECURITY_ACCESS': return '<i data-lucide="wifi"></i>';
+    case 'SOFTWARE_APPLICATIONS': return '<i data-lucide="monitor"></i>';
+    case 'FACILITIES_OFFICE': return '<i data-lucide="building"></i>';
+    case 'HR_PAYROLL': return '<i data-lucide="users"></i>';
+    default: return '<i data-lucide="hard-drive"></i>';
   }
 }
 
@@ -730,7 +741,8 @@ async function seedDatabaseDirect() {
     showToastNotification(`Seed error: ${err.message}`, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<span>⚡</span><span>Seed Demo Data</span>`;
+    btn.innerHTML = `<i data-lucide="database" style="width: 14px; height: 14px;"></i><span>Seed Demo Data</span>`;
+    refreshIcons();
   }
 }
 
@@ -785,6 +797,7 @@ function exportTicketsCSV() {
 function openCreateModal() {
   document.getElementById('modal-create-ticket').classList.add('active');
   document.getElementById('new-ticket-title').focus();
+  refreshIcons();
 }
 
 function closeCreateModal() {
@@ -820,7 +833,7 @@ function showToastNotification(msg, type = 'info') {
 
   const item = document.createElement('div');
   item.className = `toast-item ${type}`;
-  const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : '⚡');
+  const icon = type === 'success' ? '✓' : (type === 'error' ? '✕' : 'ℹ');
   item.innerHTML = `<span>${icon}</span><span>${escapeHtml(msg)}</span>`;
   shelf.appendChild(item);
 

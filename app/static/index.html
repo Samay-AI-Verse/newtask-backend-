@@ -10,6 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   
+  <!-- Lucide Professional Vector Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
@@ -21,7 +24,9 @@
   <!-- Left Sidebar Navigation -->
   <aside class="sidebar">
     <div class="brand-logo-area">
-      <div class="brand-icon-box">⚡</div>
+      <div class="brand-icon-box">
+        <i data-lucide="zap"></i>
+      </div>
       <div>
         <div class="brand-name">IntelliTicket</div>
         <div class="brand-tagline">Smarter Tickets. Faster Solutions.</div>
@@ -30,38 +35,40 @@
 
     <nav class="sidebar-nav">
       <button class="nav-item active" onclick="switchSidebarTab('dashboard', this)">
-        <span class="nav-icon">🏠</span>
+        <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
         <span>Dashboard</span>
       </button>
       <button class="nav-item" onclick="openCreateModal()">
-        <span class="nav-icon">➕</span>
+        <span class="nav-icon"><i data-lucide="plus"></i></span>
         <span>Create Ticket</span>
       </button>
       <button class="nav-item" onclick="setPriorityFilter('ALL'); switchSidebarTab('all_tickets', this);">
-        <span class="nav-icon">📋</span>
+        <span class="nav-icon"><i data-lucide="ticket"></i></span>
         <span>All Tickets</span>
       </button>
       <button class="nav-item" onclick="filterMyTickets(); switchSidebarTab('my_tickets', this);">
-        <span class="nav-icon">👤</span>
+        <span class="nav-icon"><i data-lucide="user"></i></span>
         <span>My Tickets</span>
       </button>
       <button class="nav-item" onclick="switchSidebarTab('analytics', this)">
-        <span class="nav-icon">📊</span>
+        <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
         <span>Analytics</span>
       </button>
       <button class="nav-item" onclick="exportTicketsCSV()">
-        <span class="nav-icon">📄</span>
+        <span class="nav-icon"><i data-lucide="file-text"></i></span>
         <span>Reports</span>
       </button>
       <button class="nav-item" onclick="openSettingsModal()">
-        <span class="nav-icon">⚙️</span>
+        <span class="nav-icon"><i data-lucide="settings"></i></span>
         <span>Settings</span>
       </button>
     </nav>
 
     <!-- Bottom AI Widget in Sidebar -->
     <div class="sidebar-ai-widget">
-      <div class="ai-avatar-wrap">🤖</div>
+      <div class="ai-avatar-wrap">
+        <i data-lucide="sparkles"></i>
+      </div>
       <div class="ai-widget-title">AI-Powered Prioritization</div>
       <div class="ai-widget-desc">Right ticket. Right priority. Right time.</div>
     </div>
@@ -73,14 +80,14 @@
     <!-- Top Header Bar -->
     <header class="top-header">
       <div class="search-container">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><i data-lucide="search"></i></span>
         <input type="text" id="global-search-input" class="search-input-field" placeholder="Search tickets, keywords, requester..." />
         <span class="shortcut-badge">Ctrl + K</span>
       </div>
 
       <div class="header-user-section">
         <button class="notification-bell-btn" title="3 unread SLA notifications" onclick="showNotificationToast()">
-          <span>🔔</span>
+          <i data-lucide="bell"></i>
           <span class="notification-count" id="header-notif-count">3</span>
         </button>
 
@@ -90,7 +97,7 @@
             <span class="user-name">Admin</span>
             <span class="user-role">IT Support</span>
           </div>
-          <span style="font-size: 12px; color: var(--text-muted);">▾</span>
+          <i data-lucide="chevron-down" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
         </div>
       </div>
     </header>
@@ -102,7 +109,6 @@
       <section class="welcome-banner">
         <div>
           <h1 class="welcome-title">
-            <span>👋</span>
             <span>Welcome back, Admin!</span>
           </h1>
           <p class="welcome-subtitle">Here's what's happening with your service requests today.</p>
@@ -110,8 +116,8 @@
 
         <div class="welcome-status-group">
           <div class="datetime-display">
-            <span>📅</span>
-            <span id="current-datetime-str">Sep 26, 2025 • 11:42 AM</span>
+            <i data-lucide="calendar" style="width: 15px; height: 15px;"></i>
+            <span id="current-datetime-str">Sep 26, 2026 • 7:24 PM</span>
           </div>
           <div class="db-online-status" id="db-health-badge">
             <span class="online-dot"></span>
@@ -124,7 +130,9 @@
       <section class="kpi-row">
         <!-- 1. Total Tickets -->
         <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-total">⚠️</div>
+          <div class="kpi-icon-wrap kpi-icon-total">
+            <i data-lucide="layers"></i>
+          </div>
           <div class="kpi-content">
             <span class="kpi-label">Total Tickets</span>
             <span class="kpi-number" id="kpi-total">9</span>
@@ -134,7 +142,9 @@
 
         <!-- 2. P1 Critical -->
         <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p1">🚨</div>
+          <div class="kpi-icon-wrap kpi-icon-p1">
+            <i data-lucide="alert-circle"></i>
+          </div>
           <div class="kpi-content">
             <span class="kpi-label">P1 Critical</span>
             <span class="kpi-number" id="kpi-p1">2</span>
@@ -144,7 +154,9 @@
 
         <!-- 3. P2 High -->
         <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p2">⚠️</div>
+          <div class="kpi-icon-wrap kpi-icon-p2">
+            <i data-lucide="alert-triangle"></i>
+          </div>
           <div class="kpi-content">
             <span class="kpi-label">P2 High</span>
             <span class="kpi-number" id="kpi-p2">3</span>
@@ -154,7 +166,9 @@
 
         <!-- 4. P3 Medium -->
         <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p3">ℹ️</div>
+          <div class="kpi-icon-wrap kpi-icon-p3">
+            <i data-lucide="info"></i>
+          </div>
           <div class="kpi-content">
             <span class="kpi-label">P3 Medium</span>
             <span class="kpi-number" id="kpi-p3">3</span>
@@ -164,7 +178,9 @@
 
         <!-- 5. P4 Low -->
         <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p4">⚪</div>
+          <div class="kpi-icon-wrap kpi-icon-p4">
+            <i data-lucide="minus-circle"></i>
+          </div>
           <div class="kpi-content">
             <span class="kpi-label">P4 Low</span>
             <span class="kpi-number" id="kpi-p4">1</span>
@@ -191,7 +207,7 @@
               <button class="filter-pill" data-filter="P3_MEDIUM" onclick="setPriorityFilter('P3_MEDIUM', this)">P3</button>
               <button class="filter-pill" data-filter="P4_LOW" onclick="setPriorityFilter('P4_LOW', this)">P4</button>
               <button class="btn-filter-dropdown" onclick="openCategoryFilterModal()">
-                <span>🌪️</span>
+                <i data-lucide="sliders-horizontal" style="width: 14px; height: 14px;"></i>
                 <span>Filter</span>
               </button>
             </div>
@@ -316,25 +332,25 @@
             <div class="widget-title">Quick Actions</div>
 
             <button class="btn-create-ticket-main" onclick="openCreateModal()">
-              <span>+</span>
+              <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
               <span>Create New Ticket</span>
             </button>
 
             <div class="quick-actions-2x2">
               <button class="quick-action-btn" onclick="openAnalyticsModal()">
-                <span>📊</span>
+                <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i>
                 <span>View Analytics</span>
               </button>
               <button class="quick-action-btn" onclick="exportTicketsCSV()">
-                <span>📥</span>
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
                 <span>Export Report</span>
               </button>
               <button class="quick-action-btn" id="btn-seed-fast" onclick="seedDatabaseDirect()">
-                <span>⚡</span>
+                <i data-lucide="database" style="width: 14px; height: 14px;"></i>
                 <span>Seed Demo Data</span>
               </button>
               <a href="/docs" target="_blank" class="quick-action-btn">
-                <span>📖</span>
+                <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
                 <span>Open Docs</span>
               </a>
             </div>
@@ -349,7 +365,10 @@
   <div class="modal-backdrop" id="modal-create-ticket" onclick="closeCreateModal()">
     <div class="modal-window" onclick="event.stopPropagation()">
       <div class="modal-header-row">
-        <div class="modal-title-bold">🚀 Create & Ingest Service Request</div>
+        <div class="modal-title-bold">
+          <i data-lucide="plus-circle" style="color:#2563eb; width:20px; height:20px;"></i>
+          <span>Create & Ingest Service Request</span>
+        </div>
         <button class="modal-close-btn" onclick="closeCreateModal()">✕</button>
       </div>
 
@@ -433,7 +452,8 @@
         </div>
 
         <button type="submit" class="btn-create-ticket-main" id="btn-submit-create" style="margin-top: 8px;">
-          <span>⚡ Submit & Prioritize in MongoDB</span>
+          <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
+          <span>Submit & Prioritize in MongoDB</span>
         </button>
       </form>
     </div>

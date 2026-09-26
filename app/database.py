@@ -37,6 +37,15 @@ async def close_mongo_connection():
 
 def get_db() -> AsyncIOMotorDatabase:
     """Dependency / helper to get active database instance."""
+    if db_instance.db is None and settings.MONGODB_URI:
+        try:
+            db_instance.client = AsyncIOMotorClient(
+                settings.MONGODB_URI,
+                serverSelectionTimeoutMS=4000
+            )
+            db_instance.db = db_instance.client[settings.MONGODB_DB_NAME]
+        except Exception as e:
+            logger.warning(f"Lazy DB connection warning: {e}")
     return db_instance.db
 
 async def init_db_indexes():
