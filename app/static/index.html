@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IntelliTicket - Service Request & Intelligent Prioritization Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(18, 26, 43, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #4f46e5;
+      --accent-glow: rgba(79, 70, 229, 0.35);
+      --p1-red: #ef4444;
+      --p1-bg: rgba(239, 68, 68, 0.15);
+      --p2-amber: #f59e0b;
+      --p2-bg: rgba(245, 158, 11, 0.15);
+      --p3-blue: #3b82f6;
+      --p3-bg: rgba(59, 130, 246, 0.15);
+      --p4-slate: #64748b;
+      --p4-bg: rgba(100, 116, 139, 0.15);
+      --success: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      background-image: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.18) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    header {
+      padding: 18px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 13, 22, 0.8);
+    }
+
+    .logo-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      color: white;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .brand-subtitle { font-size: 12px; color: var(--text-muted); }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+    .btn-outline {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--card-border);
+      color: var(--text-main);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.1); }
+    .btn-seed {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .btn-seed:hover { background: rgba(16, 185, 129, 0.25); }
+
+    .container {
+      max-width: 1400px;
+      margin: 28px auto;
+      padding: 0 24px;
+    }
+
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: var(--stat-color, #4f46e5);
+    }
+    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+    .stat-val { font-size: 32px; font-weight: 800; margin: 8px 0 4px 0; color: #fff; font-family: 'JetBrains Mono', monospace; }
+    .stat-hint { font-size: 11px; color: var(--text-muted); }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      .main-layout { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    /* Form Styles */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1; }
+    input, select, textarea {
+      width: 100%;
+      background: rgba(10, 15, 29, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+    textarea { resize: vertical; min-height: 75px; }
+
+    .checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      cursor: pointer;
+    }
+    .checkbox-wrap input { width: auto; }
+
+    /* Filters & Controls */
+    .filters-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .pill.active {
+      background: #4f46e5;
+      color: #fff;
+      border-color: #4f46e5;
+    }
+
+    .search-input {
+      max-width: 260px;
+      padding: 7px 12px;
+      font-size: 12px;
+    }
+
+    /* Ticket Card */
+    .ticket-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 750px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .ticket-card {
+      background: rgba(14, 21, 37, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .ticket-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(18, 27, 48, 0.8);
+      transform: translateY(-2px);
+    }
+    .ticket-card.P1_CRITICAL { border-left: 4px solid var(--p1-red); }
+    .ticket-card.P2_HIGH { border-left: 4px solid var(--p2-amber); }
+    .ticket-card.P3_MEDIUM { border-left: 4px solid var(--p3-blue); }
+    .ticket-card.P4_LOW { border-left: 4px solid var(--p4-slate); }
+
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .ticket-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: #818cf8;
+      background: rgba(99, 102, 241, 0.12);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .ticket-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 4px;
+      color: #f1f5f9;
+    }
+    .ticket-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-p1 { background: var(--p1-bg); color: var(--p1-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-p2 { background: var(--p2-bg); color: var(--p2-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-p3 { background: var(--p3-bg); color: var(--p3-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-p4 { background: var(--p4-bg); color: var(--p4-slate); border: 1px solid rgba(100, 116, 139, 0.3); }
+
+    .badge-status {
+      background: rgba(255,255,255,0.06);
+      color: #e2e8f0;
+    }
+    .badge-sla-breach {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .ticket-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 10px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .score-meter {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .ticket-actions {
+      display: flex;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+
+    /* Modal / Drawer */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 650px;
+      padding: 28px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .reasoning-box {
+      background: rgba(79, 70, 229, 0.1);
+      border: 1px solid rgba(79, 70, 229, 0.3);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 14px 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .timeline-list {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .timeline-row {
+      border-left: 2px solid #4f46e5;
+      padding-left: 12px;
+      font-size: 12px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-box">
+      <div class="logo-badge">⚡</div>
+      <div>
+        <div class="brand-title">IntelliTicket Engine</div>
+        <div class="brand-subtitle">AI-Driven Prioritization & SLA Triage</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-seed" id="btn-seed" onclick="seedDemoData()">
+        <span>⚡ Seed Realistic Demo Data</span>
+      </button>
+      <a href="/docs" target="_blank" class="btn btn-outline">
+        <span>📖 FastAPI Swagger API</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Top KPI Stats -->
+    <div class="grid-stats">
+      <div class="stat-card" style="--stat-color: #ef4444;">
+        <div class="stat-label">Critical P1 Queue</div>
+        <div class="stat-val" id="stat-p1">0</div>
+        <div class="stat-hint">Immediate action required (&lt;2h SLA)</div>
+      </div>
+      <div class="stat-card" style="--stat-color: #f59e0b;">
+        <div class="stat-label">High P2 Queue</div>
+        <div class="stat-val" id="stat-p2">0</div>
+        <div class="stat-hint">Department blockers (&lt;6h SLA)</div>
+      </div>
+      <div class="stat-card" style="--stat-color: #ef4444;">
+        <div class="stat-label">SLA Breached</div>
+        <div class="stat-val" id="stat-breached">0</div>
+        <div class="stat-hint">Exceeded deadline targets</div>
+      </div>
+      <div class="stat-card" style="--stat-color: #38bdf8;">
+        <div class="stat-label">Avg Prioritization Score</div>
+        <div class="stat-val" id="stat-avg-score">0.0</div>
+        <div class="stat-hint">Calculated across 0-100 composite index</div>
+      </div>
+      <div class="stat-card" style="--stat-color: #10b981;">
+        <div class="stat-label">Total Ingested Tickets</div>
+        <div class="stat-val" id="stat-total">0</div>
+        <div class="stat-hint" id="stat-resolved">0 Resolved</div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="main-layout">
+      <!-- Left: Ticket Ingestion Simulator -->
+      <div class="panel">
+        <div class="panel-title">
+          <span>🚀 Ingest Service Request</span>
+        </div>
+        <div class="panel-desc">
+          Test intelligent priority scoring in real-time. The engine parses urgency phrasing, impact scope, and VIP tier.
+        </div>
+
+        <form id="ticket-form" onsubmit="handleCreateTicket(event)">
+          <div class="form-group">
+            <label>Request Title</label>
+            <input type="text" id="title" required placeholder="e.g. Production Payment DB Down" />
+          </div>
+
+          <div class="form-group">
+            <label>Detailed Description</label>
+            <textarea id="description" required placeholder="Describe issue, symptoms, urgency keywords..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Blast Radius / Impact Scope</label>
+            <select id="impact_scope">
+              <option value="ORGANIZATION">Organization / Whole Company Outage (+30 pts)</option>
+              <option value="TEAM">Team / Department Affected (+20 pts)</option>
+              <option value="INDIVIDUAL" selected>Individual Employee Only (+10 pts)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Business Criticality</label>
+            <select id="business_criticality">
+              <option value="SEVERE">Severe (Revenue/Security Blocked) (+30 pts)</option>
+              <option value="HIGH">High (Key Workflow Stopped) (+22 pts)</option>
+              <option value="MEDIUM" selected>Medium (Standard Task) (+14 pts)</option>
+              <option value="LOW">Low (Trivial / Cosmetic) (+5 pts)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Requester Name & Department</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <input type="text" id="req_name" required placeholder="Name" value="Rahul Sharma" />
+              <input type="text" id="req_dept" required placeholder="Dept" value="Engineering" />
+            </div>
+            <div style="margin-top: 8px;">
+              <input type="email" id="req_email" required placeholder="Email" value="rahul@company.com" />
+            </div>
+            <label class="checkbox-wrap" style="margin-top: 8px;">
+              <input type="checkbox" id="req_is_vip" />
+              <span>VIP Executive / Director (+10 pts)</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;">
+            <span>⚡ Ingest & Prioritize Request</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Right: Prioritized Ticket Feed -->
+      <div class="panel">
+        <div class="filters-bar">
+          <div class="filter-pills">
+            <button class="pill active" onclick="setFilter('ALL')">All Requests</button>
+            <button class="pill" onclick="setFilter('P1_CRITICAL')">🚨 P1 Critical</button>
+            <button class="pill" onclick="setFilter('P2_HIGH')">⚠️ P2 High</button>
+            <button class="pill" onclick="setFilter('P3_MEDIUM')">🔷 P3 Medium</button>
+            <button class="pill" onclick="setFilter('P4_LOW')">⚪ P4 Low</button>
+            <button class="pill" onclick="setFilter('BREACHED')">🔥 Breached SLA</button>
+          </div>
+          <input type="text" class="search-input" id="search-input" placeholder="🔍 Search tickets..." oninput="handleSearch()" />
+        </div>
+
+        <div class="ticket-list" id="ticket-list">
+          <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+            Loading tickets from MongoDB...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="detail-modal" onclick="closeModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <span class="ticket-num" id="modal-ticket-id">TC-1000</span>
+        <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">✕ Close</button>
+      </div>
+      <h2 id="modal-title" style="font-size: 18px; margin-bottom: 8px;">Title</h2>
+      <p id="modal-desc" style="color: #cbd5e1; font-size: 13px; line-height: 1.5; margin-bottom: 16px;"></p>
+
+      <div class="reasoning-box">
+        <div style="font-weight: 700; color: #818cf8; margin-bottom: 4px;">🧠 AI Prioritization Decision Breakdown</div>
+        <div id="modal-reasoning"></div>
+        <div id="modal-score-chips" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;"></div>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px;">📜 Audit Trail & Lifecycle Timeline</div>
+        <div class="timeline-list" id="modal-timeline"></div>
+      </div>
+
+      <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-outline btn-sm" id="modal-btn-progress" onclick="modalChangeStatus('IN_PROGRESS')">Set In Progress</button>
+        <button class="btn btn-primary btn-sm" id="modal-btn-resolve" onclick="modalChangeStatus('RESOLVED')">Mark Resolved</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentFilter = 'ALL';
+    let searchQuery = '';
+    let currentModalTicket = null;
+
+    async function fetchStats() {
+      try {
+        const res = await fetch('/api/v1/analytics/dashboard');
+        const data = await res.json();
+        document.getElementById('stat-p1').innerText = data.p1_critical_count;
+        document.getElementById('stat-p2').innerText = data.p2_high_count;
+        document.getElementById('stat-breached').innerText = data.sla_breached_count;
+        document.getElementById('stat-avg-score').innerText = data.avg_priority_score.toFixed(1);
+        document.getElementById('stat-total').innerText = data.total_tickets;
+        document.getElementById('stat-resolved').innerText = `${data.resolved_count} Resolved`;
+      } catch (err) {
+        console.error("Stats error", err);
+      }
+    }
+
+    async function fetchTickets() {
+      try {
+        let url = '/api/v1/tickets?sort_by_priority=true&limit=50';
+        if (currentFilter.startsWith('P')) {
+          url += `&priority=${currentFilter}`;
+        } else if (currentFilter === 'BREACHED') {
+          url += '&sla_breached_only=true';
+        }
+        if (searchQuery) {
+          url += `&search=${encodeURIComponent(searchQuery)}`;
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        renderTickets(data.tickets || []);
+      } catch (err) {
+        console.error("Fetch tickets error", err);
+        document.getElementById('ticket-list').innerHTML = `
+          <div style="text-align: center; color: #ef4444; padding: 40px;">
+            Could not connect to MongoDB backend. Ensure FastAPI server is running on http://127.0.0.1:8000
+          </div>
+        `;
+      }
+    }
+
+    function renderTickets(tickets) {
+      const list = document.getElementById('ticket-list');
+      if (!tickets || tickets.length === 0) {
+        list.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 50px;">
+            No service requests found matching this filter. Click "Seed Realistic Demo Data" above!
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = tickets.map(t => {
+        const prioClass = t.priority;
+        const prioBadge = t.priority === 'P1_CRITICAL' ? 'badge-p1' : (t.priority === 'P2_HIGH' ? 'badge-p2' : (t.priority === 'P3_MEDIUM' ? 'badge-p3' : 'badge-p4'));
+        const isBreached = t.sla.is_breached;
+        
+        return `
+          <div class="ticket-card ${prioClass}">
+            <div class="ticket-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="ticket-num">${t.ticket_id}</span>
+                <span class="badge ${prioBadge}">⭐ ${t.priority.replace('_', ' ')} (${t.priority_score}/100)</span>
+                <span class="badge badge-status">${t.status}</span>
+                ${isBreached ? '<span class="badge badge-sla-breach">🔥 SLA BREACHED</span>' : `<span class="badge" style="background: rgba(16,185,129,0.1); color: #34d399;">⏱️ ${t.sla.remaining_hours}h left</span>`}
+              </div>
+              <div class="ticket-actions">
+                <button class="btn btn-outline btn-sm" onclick="openDetails('${t.ticket_id}')">🔍 Inspect</button>
+                ${t.status !== 'RESOLVED' ? `<button class="btn btn-primary btn-sm" onclick="quickResolve('${t.ticket_id}')">✓ Resolve</button>` : ''}
+              </div>
+            </div>
+
+            <div class="ticket-title">${escapeHtml(t.title)}</div>
+            <div class="ticket-desc">${escapeHtml(t.description)}</div>
+
+            <div class="ticket-meta">
+              <div class="meta-item">👤 <strong>${escapeHtml(t.requester.name)}</strong> (${t.requester.department}) ${t.requester.is_vip ? '👑 <span style="color:#fbbf24;">VIP</span>' : ''}</div>
+              <div class="meta-item">📁 ${t.category.replace('_', ' ')}</div>
+              <div class="meta-item">🎯 Impact: <strong>${t.impact_scope}</strong></div>
+              <div class="meta-item score-meter">⚡ AI Score: ${t.priority_score}/100</div>
+              ${t.assigned_to ? `<div class="meta-item">🛠️ ${t.assigned_to.name}</div>` : '<div class="meta-item" style="color: #f59e0b;">⏳ Unassigned</div>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleCreateTicket(e) {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        impact_scope: document.getElementById('impact_scope').value,
+        business_criticality: document.getElementById('business_criticality').value,
+        requester: {
+          name: document.getElementById('req_name').value,
+          email: document.getElementById('req_email').value,
+          department: document.getElementById('req_dept').value,
+          is_vip: document.getElementById('req_is_vip').checked
+        }
+      };
+
+      try {
+        const res = await fetch('/api/v1/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const created = await res.json();
+          document.getElementById('title').value = '';
+          document.getElementById('description').value = '';
+          await fetchStats();
+          await fetchTickets();
+          openDetails(created.ticket_id);
+        } else {
+          alert("Error creating ticket. Check inputs.");
+        }
+      } catch (err) {
+        alert("Failed to submit request: " + err);
+      }
+    }
+
+    async function quickResolve(ticketId) {
+      try {
+        await fetch(`/api/v1/tickets/${ticketId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'RESOLVED', actor: 'Admin Lead', note: 'Resolved during live triage' })
+        });
+        await fetchStats();
+        await fetchTickets();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function openDetails(ticketId) {
+      try {
+        const res = await fetch(`/api/v1/tickets/${ticketId}`);
+        const t = await res.json();
+        currentModalTicket = t;
+
+        document.getElementById('modal-ticket-id').innerText = t.ticket_id;
+        document.getElementById('modal-title').innerText = t.title;
+        document.getElementById('modal-desc').innerText = t.description;
+        document.getElementById('modal-reasoning').innerHTML = `
+          <strong>Reasoning:</strong> ${t.priority_breakdown.reasoning}<br/>
+          ${t.priority_breakdown.detected_urgency_keywords.length > 0 ? `<strong>Urgency Keywords Triggered:</strong> <span style="color:#f87171;">${t.priority_breakdown.detected_urgency_keywords.join(', ')}</span>` : ''}
+        `;
+
+        document.getElementById('modal-score-chips').innerHTML = `
+          <span class="badge badge-status">Urgency: ${t.priority_breakdown.urgency_score}/30</span>
+          <span class="badge badge-status">Scope: ${t.priority_breakdown.impact_score}/30</span>
+          <span class="badge badge-status">Criticality: ${t.priority_breakdown.criticality_score}/30</span>
+          <span class="badge badge-status">VIP Bonus: +${t.priority_breakdown.vip_bonus}</span>
+          <span class="badge" style="background:#4f46e5; color:#fff;">Total: ${t.priority_score}/100</span>
+        `;
+
+        document.getElementById('modal-timeline').innerHTML = t.timeline.map(item => `
+          <div class="timeline-row">
+            <div style="font-weight: 600; color: #e2e8f0;">${item.action} (${new Date(item.timestamp).toLocaleTimeString()})</div>
+            <div style="color: #94a3b8;">Actor: ${item.actor} | Note: ${item.note || 'N/A'}</div>
+          </div>
+        `).join('');
+
+        document.getElementById('detail-modal').classList.add('active');
+      } catch (err) {
+        console.error("Open details error", err);
+      }
+    }
+
+    function closeModal(e) {
+      document.getElementById('detail-modal').classList.remove('active');
+    }
+    function closeModalDirect() {
+      document.getElementById('detail-modal').classList.remove('active');
+    }
+
+    async function modalChangeStatus(status) {
+      if (!currentModalTicket) return;
+      await fetch(`/api/v1/tickets/${currentModalTicket.ticket_id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status, actor: 'Lead Admin', note: `Status updated to ${status} from inspector.` })
+      });
+      closeModalDirect();
+      await fetchStats();
+      await fetchTickets();
+    }
+
+    async function seedDemoData() {
+      const btn = document.getElementById('btn-seed');
+      btn.innerText = '⏳ Seeding MongoDB...';
+      try {
+        const res = await fetch('/api/v1/tickets/seed', { method: 'POST' });
+        const data = await res.json();
+        alert(`Success! ${data.inserted_count} realistic enterprise tickets loaded into MongoDB.`);
+        await fetchStats();
+        await fetchTickets();
+      } catch (err) {
+        alert("Seed failed: " + err);
+      } finally {
+        btn.innerText = '⚡ Seed Realistic Demo Data';
+      }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      fetchTickets();
+    }
+
+    let searchTimeout = null;
+    function handleSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        searchQuery = document.getElementById('search-input').value.trim();
+        fetchTickets();
+      }, 250);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Auto load
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchStats();
+      fetchTickets();
+      setInterval(fetchStats, 10000);
+    });
+  </script>
+</body>
+</html>
