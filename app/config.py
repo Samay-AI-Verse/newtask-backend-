@@ -1,6 +1,6 @@
 import os
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     # MongoDB Settings
     MONGODB_URI: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "intelliticket_db"
+
+    # Groq LLM Settings
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # SLA Settings (Hours)
     SLA_P1_HOURS: int = 2

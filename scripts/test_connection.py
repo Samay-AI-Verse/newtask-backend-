@@ -10,7 +10,7 @@ from app.config import settings
 
 async def test_mongo():
     print("=" * 60)
-    print(" 🔍 Testing IntelliTicket MongoDB Connection ")
+    print(" [*] Testing IntelliTicket MongoDB Connection ")
     print("=" * 60)
     print(f"Target URI: {settings.MONGODB_URI}")
     print(f"Database:   {settings.MONGODB_DB_NAME}")
@@ -19,7 +19,7 @@ async def test_mongo():
     try:
         client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=4000)
         res = await client.admin.command('ping')
-        print("✅ SUCCESS: Connected to MongoDB successfully!")
+        print("[+] SUCCESS: Connected to MongoDB successfully!")
         print(f"Server Ping Response: {res}")
         
         db = client[settings.MONGODB_DB_NAME]
@@ -34,7 +34,7 @@ async def test_mongo():
             
         client.close()
     except Exception as e:
-        print(f"❌ ERROR: Could not connect to MongoDB.")
+        print(f"[-] ERROR: Could not connect to MongoDB.")
         print(f"Details: {e}")
         print("\nTroubleshooting tips:")
         print("1. Start MongoDB Service: Open PowerShell as Admin and run 'net start MongoDB'")

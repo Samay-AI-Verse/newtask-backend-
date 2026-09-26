@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:6.0
+    container_name: intelliticket-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=intelliticket_db
+    networks:
+      - intelliticket-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # IntelliTicket FastAPI & Frontend Service
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: intelliticket-app
+    restart: always
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=IntelliTicket - Intelligent Service Request & Prioritization System
+      - APP_ENV=production
+      - DEBUG=False
+      - PORT=8000
+      - HOST=0.0.0.0
+      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_DB_NAME=intelliticket_db
+      - SLA_P1_HOURS=2
+      - SLA_P2_HOURS=6
+      - SLA_P3_HOURS=24
+      - SLA_P4_HOURS=72
+      - CORS_ORIGINS=*
+    networks:
+      - intelliticket-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  intelliticket-network:
+    driver: bridge

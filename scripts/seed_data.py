@@ -222,7 +222,7 @@ async def seed_database():
 
     for index, item in enumerate(DEMO_TICKETS):
         req_obj = type('Req', (), item["requester"])()
-        priority, score, breakdown, category, sla = PrioritizationEngine.analyze_and_score(
+        priority, score, breakdown, category, sla = await PrioritizationEngine.analyze_and_score(
             title=item["title"],
             description=item["description"],
             impact_scope=item["impact_scope"],

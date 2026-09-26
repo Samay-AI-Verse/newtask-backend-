@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: intelliticket-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: MONGODB_URI
+        sync: false # Set your MongoDB Atlas URI in Render dashboard
+      - key: MONGODB_DB_NAME
+        value: intelliticket_db
+      - key: GROQ_API_KEY
+        sync: false # Optional: Set your Groq API key in Render dashboard
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: CORS_ORIGINS
+        value: "*"

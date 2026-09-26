@@ -60,7 +60,7 @@ class TicketService:
         db = get_db()
         
         # 1. Run Intelligent Prioritization Engine
-        priority, priority_score, breakdown, category, sla = PrioritizationEngine.analyze_and_score(
+        priority, priority_score, breakdown, category, sla = await PrioritizationEngine.analyze_and_score(
             title=payload.title,
             description=payload.description,
             impact_scope=payload.impact_scope,

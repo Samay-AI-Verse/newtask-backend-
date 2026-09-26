@@ -40,6 +40,9 @@ class PriorityBreakdown(BaseModel):
     total_score: int = Field(..., description="Composite Score out of 100")
     detected_urgency_keywords: List[str] = []
     reasoning: str = Field(..., example="High urgency detected: Outage affecting payroll on pay-day")
+    root_cause_hypothesis: Optional[str] = Field(None, example="Potential gateway timeout or expired token")
+    recommended_action: Optional[str] = Field(None, example="Restart auth service node and inspect error logs")
+    ai_model_used: Optional[str] = Field("Deterministic Triage Engine", example="Groq Llama-3.3-70B")
 
 
 class TimelineEvent(BaseModel):

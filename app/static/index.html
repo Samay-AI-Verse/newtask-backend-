@@ -928,8 +928,11 @@
         document.getElementById('modal-title').innerText = t.title;
         document.getElementById('modal-desc').innerText = t.description;
         document.getElementById('modal-reasoning').innerHTML = `
+          <div style="margin-bottom: 6px;"><span class="badge" style="background: rgba(99,102,241,0.2); color:#a5b4fc;">🤖 AI Engine: ${t.priority_breakdown.ai_model_used || 'Hybrid Triage AI'}</span></div>
           <strong>Decision Reasoning:</strong> ${t.priority_breakdown.reasoning}<br/>
-          ${t.priority_breakdown.detected_urgency_keywords.length > 0 ? `<strong>Triggered Keywords:</strong> <span style="color:#f87171;">${t.priority_breakdown.detected_urgency_keywords.join(', ')}</span>` : ''}
+          ${t.priority_breakdown.root_cause_hypothesis ? `<div style="margin-top:6px; color:#cbd5e1;">🔍 <strong>Root-Cause Hypothesis:</strong> ${t.priority_breakdown.root_cause_hypothesis}</div>` : ''}
+          ${t.priority_breakdown.recommended_action ? `<div style="margin-top:6px; color:#34d399;">💡 <strong>Recommended Action:</strong> ${t.priority_breakdown.recommended_action}</div>` : ''}
+          ${t.priority_breakdown.detected_urgency_keywords.length > 0 ? `<div style="margin-top:6px;"><strong>Triggered Keywords:</strong> <span style="color:#f87171;">${t.priority_breakdown.detected_urgency_keywords.join(', ')}</span></div>` : ''}
         `;
 
         document.getElementById('modal-score-chips').innerHTML = `

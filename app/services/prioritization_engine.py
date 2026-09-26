@@ -48,7 +48,7 @@ class PrioritizationEngine:
     """
 
     @classmethod
-    def analyze_and_score(
+    async def analyze_and_score(
         cls,
         title: str,
         description: str,
@@ -60,43 +60,69 @@ class PrioritizationEngine:
         
         full_text = f"{title.lower()} {description.lower()}"
         
-        # 1. Calculate Urgency Score (0 - 30) & detect keywords
-        urgency_score = 5
-        detected_keywords = []
+        # Check Groq LLM first
+        from app.services.llm_service import GroqLLMService
+        groq_result = await GroqLLMService.analyze_ticket_with_groq(
+            title=title,
+            description=description,
+            impact_scope=impact_scope.value,
+            business_criticality=business_criticality.value,
+            requester_name=requester.name,
+            requester_dept=requester.department,
+            is_vip=requester.is_vip
+        )
 
-        for kw in CRITICAL_KEYWORDS:
-            if re.search(r'\b' + re.escape(kw) + r'\b', full_text):
-                urgency_score = max(urgency_score, 30)
-                detected_keywords.append(kw)
+        ai_model = f"Groq {settings.GROQ_MODEL}" if groq_result else "Deterministic NLP Heuristic Engine"
+        root_cause = groq_result.get("root_cause_hypothesis") if groq_result else None
+        recommended_action = groq_result.get("recommended_action") if groq_result else None
 
-        if urgency_score < 30:
-            for kw in HIGH_KEYWORDS:
+        if groq_result:
+            urgency_score = int(groq_result.get("urgency_score", 15))
+            impact_score = int(groq_result.get("impact_score", 15))
+            criticality_score = int(groq_result.get("criticality_score", 15))
+            detected_keywords = groq_result.get("detected_keywords", [])
+            custom_reasoning = groq_result.get("reasoning")
+            suggested_cat_str = groq_result.get("suggested_category")
+        else:
+            urgency_score = 5
+            detected_keywords = []
+            custom_reasoning = None
+            suggested_cat_str = None
+
+        if not groq_result:
+            for kw in CRITICAL_KEYWORDS:
                 if re.search(r'\b' + re.escape(kw) + r'\b', full_text):
-                    urgency_score = max(urgency_score, 22)
+                    urgency_score = max(urgency_score, 30)
                     detected_keywords.append(kw)
 
-        if urgency_score < 22:
-            for kw in MEDIUM_KEYWORDS:
-                if re.search(r'\b' + re.escape(kw) + r'\b', full_text):
-                    urgency_score = max(urgency_score, 14)
-                    detected_keywords.append(kw)
+            if urgency_score < 30:
+                for kw in HIGH_KEYWORDS:
+                    if re.search(r'\b' + re.escape(kw) + r'\b', full_text):
+                        urgency_score = max(urgency_score, 22)
+                        detected_keywords.append(kw)
 
-        # 2. Calculate Impact Scope Score (0 - 30)
-        impact_score_map = {
-            ImpactScope.ORGANIZATION: 30,
-            ImpactScope.TEAM_DEPARTMENT: 20,
-            ImpactScope.INDIVIDUAL: 10
-        }
-        impact_score = impact_score_map.get(impact_scope, 10)
+            if urgency_score < 22:
+                for kw in MEDIUM_KEYWORDS:
+                    if re.search(r'\b' + re.escape(kw) + r'\b', full_text):
+                        urgency_score = max(urgency_score, 14)
+                        detected_keywords.append(kw)
 
-        # 3. Calculate Business Criticality Score (0 - 30)
-        criticality_score_map = {
-            BusinessCriticality.SEVERE: 30,
-            BusinessCriticality.HIGH: 22,
-            BusinessCriticality.MEDIUM: 14,
-            BusinessCriticality.LOW: 5
-        }
-        criticality_score = criticality_score_map.get(business_criticality, 14)
+            # Impact Scope Score (0 - 30)
+            impact_score_map = {
+                ImpactScope.ORGANIZATION: 30,
+                ImpactScope.TEAM_DEPARTMENT: 20,
+                ImpactScope.INDIVIDUAL: 10
+            }
+            impact_score = impact_score_map.get(impact_scope, 10)
+
+            # Business Criticality Score (0 - 30)
+            criticality_score_map = {
+                BusinessCriticality.SEVERE: 30,
+                BusinessCriticality.HIGH: 22,
+                BusinessCriticality.MEDIUM: 14,
+                BusinessCriticality.LOW: 5
+            }
+            criticality_score = criticality_score_map.get(business_criticality, 14)
 
         # 4. VIP Bonus (0 - 10)
         vip_bonus = 10 if requester.is_vip else 0
@@ -143,7 +169,10 @@ class PrioritizationEngine:
             vip_bonus=vip_bonus,
             total_score=total_score,
             detected_urgency_keywords=list(set(detected_keywords)),
-            reasoning=reasoning
+            reasoning=custom_reasoning or reasoning,
+            root_cause_hypothesis=root_cause,
+            recommended_action=recommended_action,
+            ai_model_used=ai_model
         )
 
         return priority, total_score, breakdown, category, sla
