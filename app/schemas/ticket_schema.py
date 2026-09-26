@@ -12,7 +12,7 @@ from app.models.ticket_model import (
 
 class RequesterInfo(BaseModel):
     name: str = Field(..., example="Alice Johnson")
-    email: EmailStr = Field(..., example="alice.johnson@company.com")
+    email: str = Field(..., example="alice.johnson@company.com")
     department: str = Field(..., example="Finance")
     role: Optional[str] = Field("Employee", example="Senior Accountant")
     is_vip: bool = Field(False, description="VIP employees (C-level/directors) receive priority weight boost")
@@ -20,7 +20,7 @@ class RequesterInfo(BaseModel):
 
 class AssignedAgent(BaseModel):
     name: str = Field(..., example="David Miller")
-    email: EmailStr = Field(..., example="david.m@support.internal")
+    email: str = Field(..., example="david.m@support.internal")
     team: str = Field(..., example="IT Operations")
 
 
