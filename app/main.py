@@ -14,6 +14,14 @@ from app.routers import tickets, analytics
 async def lifespan(app: FastAPI):
     # Startup: Connect to MongoDB and set up indexes
     await connect_to_mongo()
+    try:
+        if db_instance.db is not None:
+            count = await db_instance.db.tickets.count_documents({})
+            if count == 0:
+                from scripts.seed_data import seed_database
+                await seed_database()
+    except Exception as e:
+        pass
     yield
     # Shutdown: Close database connections
     await close_mongo_connection()

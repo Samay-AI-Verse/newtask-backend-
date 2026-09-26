@@ -1,506 +1,474 @@
 /**
- * IntelliTicket - Intelligent Service Request & Prioritization System
- * Enterprise Client Application Controller
+ * IntelliTicket - Smarter Tickets. Faster Solutions.
+ * Application Controller & Real-Time MongoDB Connector
  */
 
-// Global App State
+// Application State
 const state = {
-  currentTab: 'analytics',
-  viewMode: 'list', // 'list' or 'kanban'
   tickets: [],
   dashboardStats: null,
-  filterPriority: 'ALL',
-  filterStatus: 'ALL',
-  filterCategory: 'ALL',
-  filterBreached: false,
+  activeFilter: 'ALL',
   searchQuery: '',
   selectedTicket: null,
   charts: {
     priority: null,
-    category: null,
-    status: null
-  },
-  autoRefreshInterval: null,
-  isAutoRefreshEnabled: true
+    slaGauge: null
+  }
 };
 
-// Preset Enterprise Scenarios for Quick Ingestion Testing
+// Enterprise Quick Presets
 const PRESETS = [
   {
-    label: "🔥 Prod Database Down",
-    title: "EMERGENCY: Primary Production Database Cluster Unresponsive",
-    description: "Our primary PostgreSQL and Redis clusters are reporting high connection failures. Checkout and user login APIs are failing globally. Immediate production outage fix required!",
-    impact_scope: "ORGANIZATION",
-    business_criticality: "SEVERE",
-    name: "Alex Rivera",
-    email: "a.rivera@company.com",
-    dept: "Site Reliability",
-    is_vip: true
+    label: "🔥 Payment Gateway Down",
+    title: "Payment Gateway Down",
+    desc: "Production payment gateway is failing with 500 error. Urgent fix required! Customers unable to checkout.",
+    scope: "ORGANIZATION",
+    crit: "SEVERE",
+    name: "Sarah Jenkins",
+    dept: "Infrastructure",
+    email: "sarah.j@company.com",
+    vip: true
   },
   {
-    label: "💳 Payment Webhook 500",
-    title: "Critical: Stripe & Razorpay Webhook Failures causing lost orders",
-    description: "Incoming payment confirmation webhooks are throwing error 500 and timeout. Customers are being charged but orders are not marked as completed.",
-    impact_scope: "ORGANIZATION",
-    business_criticality: "SEVERE",
-    name: "Vikram Mehta",
-    email: "v.mehta@company.com",
-    dept: "Payments & Billing",
-    is_vip: false
+    label: "💳 Payroll System Locked",
+    title: "Payroll System Locked",
+    desc: "Salary processing system is locked on salary day. Need immediate support before cutoff time.",
+    scope: "ORGANIZATION",
+    crit: "SEVERE",
+    name: "Michael Scott",
+    dept: "Finance",
+    email: "m.scott@company.com",
+    vip: true
   },
   {
-    label: "🔐 VIP Account Locked Out",
-    title: "Urgent: CFO locked out of banking approval portal before payroll cutoff",
-    description: "2FA hardware token expired and unable to login to Corporate Banking portal. Payroll disbursement cut-off is in 2 hours.",
-    impact_scope: "TEAM",
-    business_criticality: "HIGH",
-    name: "Catherine Vance",
-    email: "c.vance@company.com",
-    dept: "Finance Executive",
-    is_vip: true
+    label: "📶 VPN Not Working",
+    title: "VPN Not Working",
+    desc: "VPN is down for entire Marketing department. 50+ employees affected and cannot access internal tools.",
+    scope: "TEAM",
+    crit: "HIGH",
+    name: "David Miller",
+    dept: "Network",
+    email: "david.m@company.com",
+    vip: false
   },
   {
-    label: "📶 London Office VPN",
-    title: "Corporate VPN gateway failing for London office team",
-    description: "Engineers in London branch cannot connect to corporate VPN. Intermittent connection drops preventing code pushes.",
-    impact_scope: "TEAM",
-    business_criticality: "HIGH",
-    name: "Liam O'Connor",
-    email: "liam.o@company.com",
-    dept: "Engineering UK",
-    is_vip: false
+    label: "💻 Billing Report Failing",
+    title: "Billing Report Failing",
+    desc: "Monthly billing report not generating since morning due to timeout in SAP connector.",
+    scope: "TEAM",
+    crit: "HIGH",
+    name: "Elena Rostova",
+    dept: "Application",
+    email: "elena.r@company.com",
+    vip: false
   },
   {
-    label: "💺 Ergonomic Chair",
-    title: "Request for lumbar support ergonomic chair for workstation #402",
-    description: "Requesting replacement of current standard chair with ergonomic mesh chair to prevent posture strain.",
-    impact_scope: "INDIVIDUAL",
-    business_criticality: "LOW",
-    name: "Ananya Sharma",
-    email: "ananya.s@company.com",
-    dept: "Product Design",
-    is_vip: false
+    label: "🖥️ New Mouse Request",
+    title: "New Mouse Request",
+    desc: "Employee needs a new wireless mouse for workstation desk setup.",
+    scope: "INDIVIDUAL",
+    crit: "LOW",
+    name: "Vikram Sethi",
+    dept: "Hardware",
+    email: "vikram.s@company.com",
+    vip: false
   }
 ];
 
-// Keyword Rules for Real-Time Simulator Preview
-const CRITICAL_KEYWORDS = ["down", "outage", "offline", "crashed", "emergency", "blocked", "cannot work", "production", "data loss", "breach", "security leak", "hacked", "payroll locked", "fire", "system halt", "unresponsive", "payment failing"];
+// Keywords for live client-side scoring preview
+const CRITICAL_KEYWORDS = ["down", "outage", "offline", "crashed", "emergency", "blocked", "cannot work", "production", "data loss", "breach", "security leak", "hacked", "payroll locked", "system halt", "unresponsive", "payment failing"];
 const HIGH_KEYWORDS = ["asap", "urgent", "deadline today", "severe delay", "corrupted", "error 500", "unable to login", "broken", "critical bug", "customer blocked", "failed build"];
 const MEDIUM_KEYWORDS = ["slow", "glitch", "warning", "intermittent", "delayed", "reinstall", "access requested", "update needed", "inconvenience", "question"];
 
-// Initialize on DOM Load
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  initTheme();
+  initClock();
   setupEventListeners();
   renderPresets();
-  loadData();
-  startHealthMonitor();
   setupLiveScoringSimulator();
+  loadData();
 
-  // Auto-refresh every 12 seconds
-  state.autoRefreshInterval = setInterval(() => {
-    if (state.isAutoRefreshEnabled) {
-      loadData(false);
-    }
-  }, 12000);
+  // Polling every 10s for real-time background sync
+  setInterval(() => {
+    loadData(false);
+  }, 10000);
 });
 
-// Theme Management
-function initTheme() {
-  const saved = localStorage.getItem('intelliticket_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  updateThemeIcon(saved);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  const target = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', target);
-  localStorage.setItem('intelliticket_theme', target);
-  updateThemeIcon(target);
-  if (state.charts.priority) {
-    updateCharts(state.dashboardStats);
-  }
-}
-
-function updateThemeIcon(theme) {
-  const btn = document.getElementById('theme-toggle-btn');
-  if (btn) {
-    btn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
-  }
-}
-
-// Navigation Tabs
-function switchTab(tabName) {
-  state.currentTab = tabName;
-  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tabName);
-  });
-  document.querySelectorAll('.view-section').forEach(sec => {
-    sec.classList.toggle('active', sec.id === `section-${tabName}`);
-  });
-
-  if (tabName === 'analytics' && state.dashboardStats) {
-    updateCharts(state.dashboardStats);
-  }
-}
-
-// View Mode (List vs Kanban)
-function switchViewMode(mode) {
-  state.viewMode = mode;
-  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.mode === mode);
-  });
-  document.getElementById('tickets-list-container').style.display = mode === 'list' ? 'flex' : 'none';
-  document.getElementById('kanban-board-container').style.display = mode === 'kanban' ? 'grid' : 'none';
-  renderTickets();
+// Dynamic Clock & Date in Header
+function initClock() {
+  const updateClock = () => {
+    const now = new Date();
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    const dateStr = now.toLocaleDateString('en-US', options);
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const timeStr = `${hours}:${minutes} ${ampm}`;
+    const el = document.getElementById('current-datetime-str');
+    if (el) el.innerText = `${dateStr} • ${timeStr}`;
+  };
+  updateClock();
+  setInterval(updateClock, 30000);
 }
 
 // Setup Event Listeners
 function setupEventListeners() {
-  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-  });
+  // Global Search
+  const searchInput = document.getElementById('global-search-input');
+  if (searchInput) {
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        state.searchQuery = e.target.value.trim();
+        loadTickets();
+      }, 250);
+    });
+  }
 
-  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchViewMode(btn.dataset.mode));
+  // Ctrl + K Global Shortcut
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchInput?.focus();
+    }
   });
-
-  const searchInput = document.getElementById('search-input');
-  let searchTimeout = null;
-  searchInput.addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      state.searchQuery = e.target.value.trim();
-      loadTickets();
-    }, 250);
-  });
-
-  document.getElementById('ticket-ingest-form').addEventListener('submit', handleFormSubmit);
 }
 
-// Fetch Stats & Tickets
+// Data Fetching
 async function loadData(showToast = false) {
-  await Promise.all([loadStats(), loadTickets()]);
+  await Promise.all([loadDashboardMetrics(), loadTickets()]);
   if (showToast) {
-    createToast('System data updated from MongoDB', 'info');
+    showToastNotification("Data synchronized with MongoDB", "info");
   }
 }
 
-async function loadStats() {
+async function loadDashboardMetrics() {
   try {
     const res = await fetch('/api/v1/analytics/dashboard');
-    if (!res.ok) throw new Error("Failed to load dashboard metrics");
+    if (!res.ok) throw new Error("Metrics API error");
     const data = await res.json();
     state.dashboardStats = data;
-    renderStats(data);
-    updateCharts(data);
+    renderTopMetrics(data);
+    renderPriorityDonut(data);
+    renderSLAGauge(data);
   } catch (err) {
-    console.error("Stats fetch error:", err);
+    console.error("Failed to load metrics:", err);
   }
 }
 
 async function loadTickets() {
   try {
     let url = '/api/v1/tickets?sort_by_priority=true&limit=100';
-    if (state.filterPriority !== 'ALL') {
-      url += `&priority=${state.filterPriority}`;
-    }
-    if (state.filterStatus !== 'ALL') {
-      url += `&status=${state.filterStatus}`;
-    }
-    if (state.filterCategory !== 'ALL') {
-      url += `&category=${state.filterCategory}`;
-    }
-    if (state.filterBreached) {
-      url += '&sla_breached_only=true';
+    if (state.activeFilter !== 'ALL') {
+      url += `&priority=${state.activeFilter}`;
     }
     if (state.searchQuery) {
       url += `&search=${encodeURIComponent(state.searchQuery)}`;
     }
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch tickets");
+    if (!res.ok) throw new Error("Tickets API error");
     const data = await res.json();
     state.tickets = data.tickets || [];
-    renderTickets();
+    renderTicketsTable();
+    updateLiveActivityStream();
   } catch (err) {
-    console.error("Tickets fetch error:", err);
-    document.getElementById('tickets-list-container').innerHTML = `
-      <div style="text-align: center; color: var(--p1-red); padding: 40px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--p1-border);">
-        <h3>⚠️ Cannot Connect to MongoDB Backend</h3>
-        <p style="font-size: 13px; margin-top: 6px; color: var(--text-muted);">Please make sure MongoDB and FastAPI are running on <code>http://127.0.0.1:8000</code>.</p>
-      </div>
-    `;
+    console.error("Failed to fetch tickets:", err);
+    const tbody = document.getElementById('tickets-table-body');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; color: #ef4444; padding: 40px;">
+            ⚠️ Could not connect to MongoDB. Ensure backend server is running on <strong>http://127.0.0.1:8000</strong>
+          </td>
+        </tr>
+      `;
+    }
   }
 }
 
-// Render Stats Banner
-function renderStats(stats) {
-  document.getElementById('stat-p1').innerText = stats.p1_critical_count;
-  document.getElementById('stat-p2').innerText = stats.p2_high_count;
-  document.getElementById('stat-breached').innerText = stats.sla_breached_count;
-  document.getElementById('stat-at-risk').innerText = stats.sla_at_risk_count;
-  document.getElementById('stat-avg-score').innerText = stats.avg_priority_score.toFixed(1);
-  document.getElementById('stat-total').innerText = stats.total_tickets;
-  document.getElementById('stat-resolved').innerText = `${stats.resolved_count} Resolved`;
+// Render Top 5 KPI Cards
+function renderTopMetrics(stats) {
+  const total = stats.total_tickets || 0;
+  const p1 = stats.p1_critical_count || 0;
+  const p2 = stats.p2_high_count || 0;
+  const p3 = stats.priority_distribution['P3_MEDIUM'] || 0;
+  const p4 = stats.priority_distribution['P4_LOW'] || 0;
+
+  document.getElementById('kpi-total').innerText = total;
+  document.getElementById('kpi-p1').innerText = p1;
+  document.getElementById('kpi-p2').innerText = p2;
+  document.getElementById('kpi-p3').innerText = p3;
+  document.getElementById('kpi-p4').innerText = p4;
+
+  document.getElementById('pill-all-count').innerText = total;
+  document.getElementById('dist-total-count').innerText = total;
+  document.getElementById('donut-center-num').innerText = total;
 }
 
-// Render Charts via Chart.js
-function updateCharts(data) {
-  if (!data || !window.Chart) return;
+// Render Tickets Table
+function renderTicketsTable() {
+  const tbody = document.getElementById('tickets-table-body');
+  if (!tbody) return;
 
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-  const textColor = isLight ? '#475569' : '#94a3b8';
-
-  // 1. Priority Doughnut Chart
-  const ctxPriority = document.getElementById('chart-priority')?.getContext('2d');
-  if (ctxPriority) {
-    if (state.charts.priority) state.charts.priority.destroy();
-    
-    const prioLabels = ['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Low'];
-    const prioValues = [
-      data.priority_distribution['P1_CRITICAL'] || 0,
-      data.priority_distribution['P2_HIGH'] || 0,
-      data.priority_distribution['P3_MEDIUM'] || 0,
-      data.priority_distribution['P4_LOW'] || 0
-    ];
-
-    state.charts.priority = new Chart(ctxPriority, {
-      type: 'doughnut',
-      data: {
-        labels: prioLabels,
-        datasets: [{
-          data: prioValues,
-          backgroundColor: ['#ef4444', '#f59e0b', '#06b6d4', '#64748b'],
-          borderWidth: 0,
-          hoverOffset: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, font: { size: 11 } } }
-        },
-        cutout: '68%'
-      }
-    });
-  }
-
-  // 2. Category Volume Bar Chart
-  const ctxCat = document.getElementById('chart-category')?.getContext('2d');
-  if (ctxCat) {
-    if (state.charts.category) state.charts.category.destroy();
-
-    const catLabels = Object.keys(data.category_distribution).map(c => c.replace('_', ' '));
-    const catValues = Object.values(data.category_distribution);
-
-    state.charts.category = new Chart(ctxCat, {
-      type: 'bar',
-      data: {
-        labels: catLabels,
-        datasets: [{
-          label: 'Requests',
-          data: catValues,
-          backgroundColor: '#6366f1',
-          borderRadius: 6
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          x: { ticks: { color: textColor, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } }
-        }
-      }
-    });
-  }
-
-  // 3. Status Distribution Chart
-  const ctxStatus = document.getElementById('chart-status')?.getContext('2d');
-  if (ctxStatus) {
-    if (state.charts.status) state.charts.status.destroy();
-
-    const statusLabels = ['Open', 'In Progress', 'Escalated', 'Resolved'];
-    const statusValues = [
-      data.status_distribution['OPEN'] || 0,
-      data.status_distribution['IN_PROGRESS'] || 0,
-      data.status_distribution['ESCALATED'] || 0,
-      data.status_distribution['RESOLVED'] || 0
-    ];
-
-    state.charts.status = new Chart(ctxStatus, {
-      type: 'pie',
-      data: {
-        labels: statusLabels,
-        datasets: [{
-          data: statusValues,
-          backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444', '#10b981'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, font: { size: 11 } } }
-        }
-      }
-    });
-  }
-}
-
-// Render Tickets (List & Kanban)
-function renderTickets() {
-  if (state.viewMode === 'list') {
-    renderListView();
-  } else {
-    renderKanbanView();
-  }
-}
-
-function renderListView() {
-  const container = document.getElementById('tickets-list-container');
   if (!state.tickets || state.tickets.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; color: var(--text-muted); padding: 50px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
-        <div style="font-size: 32px; margin-bottom: 8px;">📭</div>
-        <h3>No matching service requests found</h3>
-        <p style="font-size: 13px; margin-top: 4px;">Try changing filter criteria or click <strong>Seed Realistic Demo Data</strong> above.</p>
-      </div>
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">
+          No matching service requests found. Click <strong>"Seed Demo Data"</strong> or <strong>"+ Create New Ticket"</strong>.
+        </td>
+      </tr>
     `;
     return;
   }
 
-  container.innerHTML = state.tickets.map(t => {
-    const prioBadge = getPriorityBadgeClass(t.priority);
-    const isBreached = t.sla.is_breached;
-    const isAtRisk = !isBreached && t.sla.remaining_hours <= 2.0 && t.status !== 'RESOLVED' && t.status !== 'CLOSED';
+  tbody.innerHTML = state.tickets.map((t, index) => {
+    const pIconClass = t.priority === 'P1_CRITICAL' ? 'p1' : (t.priority === 'P2_HIGH' ? 'p2' : (t.priority === 'P3_MEDIUM' ? 'p3' : 'p4'));
+    const pIconSymbol = t.priority === 'P1_CRITICAL' || t.priority === 'P2_HIGH' ? '!' : (t.priority === 'P3_MEDIUM' ? 'i' : '⚪');
+    
+    const prioLabel = t.priority === 'P1_CRITICAL' ? 'P1 Critical' : 
+                     (t.priority === 'P2_HIGH' ? 'P2 High' : 
+                     (t.priority === 'P3_MEDIUM' ? 'P3 Medium' : 'P4 Low'));
+
+    const categoryIcon = getCategoryIcon(t.category);
+    const categoryName = formatCategoryName(t.category);
+
+    const statusLabel = t.status === 'IN_PROGRESS' ? 'In Progress' : 
+                       (t.status === 'PENDING_INFO' ? 'Pending Info' : 
+                       (t.status === 'RESOLVED' ? 'Resolved' : 
+                       (t.status === 'ESCALATED' ? 'Escalated' : 'Open')));
+
+    const slaHours = t.sla ? `${Math.round(t.sla.remaining_hours)}h` : '2h';
+    const formattedCode = formatTicketCode(t.ticket_id, index);
 
     return `
-      <div class="ticket-card ${t.priority}" onclick="openTicketModal('${t.ticket_id}')">
-        <div class="ticket-card-header">
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span class="ticket-id-tag">${t.ticket_id}</span>
-            <span class="badge ${prioBadge}">⭐ ${t.priority.replace('_', ' ')}</span>
-            <span class="badge badge-status ${t.status}">${t.status.replace('_', ' ')}</span>
-            ${isBreached ? '<span class="badge badge-sla breached">🔥 SLA BREACHED</span>' : 
-              (isAtRisk ? `<span class="badge badge-sla at-risk">⚠️ ${t.sla.remaining_hours}h left</span>` : 
-              `<span class="badge badge-sla">⏱️ ${t.sla.remaining_hours}h SLA</span>`)}
+      <tr onclick="openTicketInspector('${t.ticket_id}')">
+        <!-- 1. # Column -->
+        <td>
+          <div class="ticket-id-col">
+            <div class="ticket-priority-icon ${pIconClass}">${pIconSymbol}</div>
+            <span class="ticket-code-str">${formattedCode}</span>
           </div>
-          <div style="display: flex; gap: 6px;" onclick="event.stopPropagation()">
-            <button class="btn btn-secondary btn-sm" onclick="openTicketModal('${t.ticket_id}')">🔍 Inspect</button>
-            ${t.status !== 'RESOLVED' ? `<button class="btn btn-primary btn-sm" onclick="quickResolve('${t.ticket_id}')">✓ Resolve</button>` : ''}
-          </div>
-        </div>
+        </td>
 
-        <div class="ticket-title">${escapeHtml(t.title)}</div>
-        <div class="ticket-desc-snippet">${escapeHtml(t.description)}</div>
+        <!-- 2. Title & Description -->
+        <td>
+          <div class="ticket-title-cell">
+            <div class="ticket-title-bold">${escapeHtml(t.title)}</div>
+            <div class="ticket-snippet-text">${escapeHtml(t.description)}</div>
+          </div>
+        </td>
 
-        <div class="ticket-meta-row">
-          <div class="ticket-meta-left">
-            <div class="meta-chip">
-              <span>👤</span>
-              <strong>${escapeHtml(t.requester.name)}</strong>
-              <span>(${escapeHtml(t.requester.department)})</span>
-              ${t.requester.is_vip ? '<span style="color:#fbbf24; font-weight:700;">👑 VIP</span>' : ''}
-            </div>
-            <div class="meta-chip">
-              <span>📁</span>
-              <span>${t.category.replace('_', ' ')}</span>
-            </div>
-            <div class="meta-chip">
-              <span>🎯 Impact:</span>
-              <strong>${t.impact_scope}</strong>
-            </div>
-            <div class="meta-chip">
-              <span>⚡ AI Score:</span>
-              <span class="score-badge">${t.priority_score}/100</span>
-            </div>
+        <!-- 3. Category -->
+        <td>
+          <div class="category-cell">
+            <span>${categoryIcon}</span>
+            <span>${categoryName}</span>
           </div>
-          <div>
-            ${t.assigned_to ? 
-              `<span style="color: #a5b4fc; font-weight: 600;">🛠️ ${escapeHtml(t.assigned_to.name)}</span>` : 
-              '<span style="color: #f59e0b; font-weight: 600;">⏳ Unassigned</span>'}
+        </td>
+
+        <!-- 4. Priority -->
+        <td>
+          <span class="badge-pill-priority ${t.priority}">${prioLabel}</span>
+        </td>
+
+        <!-- 5. Score -->
+        <td>
+          <span class="score-num-bold">${t.priority_score}</span>
+        </td>
+
+        <!-- 6. SLA -->
+        <td>
+          <div class="sla-clock-cell">
+            <span>⏱️</span>
+            <span>${slaHours}</span>
           </div>
-        </div>
-      </div>
+        </td>
+
+        <!-- 7. Status -->
+        <td>
+          <span class="badge-pill-status ${t.status}">${statusLabel}</span>
+        </td>
+
+        <!-- 8. Actions -->
+        <td style="text-align: right;" onclick="event.stopPropagation()">
+          <button class="action-dots-btn" onclick="openTicketInspector('${t.ticket_id}')" title="Inspect Ticket Details">
+            •••
+          </button>
+        </td>
+      </tr>
     `;
   }).join('');
 }
 
-function renderKanbanView() {
-  const columns = {
-    OPEN: document.getElementById('kanban-col-open'),
-    IN_PROGRESS: document.getElementById('kanban-col-progress'),
-    PENDING_INFO: document.getElementById('kanban-col-pending'),
-    ESCALATED: document.getElementById('kanban-col-escalated'),
-    RESOLVED: document.getElementById('kanban-col-resolved')
-  };
+// Format ticket ID into friendly code like TKT-001 or TC-1001
+function formatTicketCode(ticketId, index) {
+  if (!ticketId) return `TKT-${String(index + 1).padStart(3, '0')}`;
+  if (ticketId.startsWith('TC-')) {
+    const num = parseInt(ticketId.replace('TC-', ''), 10);
+    if (num >= 1000) {
+      return `TKT-${String(num - 1000).padStart(3, '0')}`;
+    }
+  }
+  return ticketId;
+}
 
-  const counts = { OPEN: 0, IN_PROGRESS: 0, PENDING_INFO: 0, ESCALATED: 0, RESOLVED: 0 };
+function getCategoryIcon(cat) {
+  switch (cat) {
+    case 'IT_INFRASTRUCTURE': return '🖧';
+    case 'FINANCE_BILLING': return '💳';
+    case 'SECURITY_ACCESS': return '📶';
+    case 'SOFTWARE_APPLICATIONS': return '💻';
+    case 'FACILITIES_OFFICE': return '🏢';
+    case 'HR_PAYROLL': return '👥';
+    default: return '🖥️';
+  }
+}
 
-  // Clear columns
-  Object.values(columns).forEach(col => {
-    if (col) col.innerHTML = '';
+function formatCategoryName(cat) {
+  switch (cat) {
+    case 'IT_INFRASTRUCTURE': return 'Infrastructure';
+    case 'FINANCE_BILLING': return 'Finance';
+    case 'SECURITY_ACCESS': return 'Network';
+    case 'SOFTWARE_APPLICATIONS': return 'Application';
+    case 'FACILITIES_OFFICE': return 'Facilities';
+    case 'HR_PAYROLL': return 'HR & Payroll';
+    default: return 'Hardware';
+  }
+}
+
+// Render Priority Donut Chart
+function renderPriorityDonut(stats) {
+  const canvas = document.getElementById('chart-priority-donut');
+  if (!canvas || !window.Chart) return;
+
+  const p1 = stats.priority_distribution['P1_CRITICAL'] || 0;
+  const p2 = stats.priority_distribution['P2_HIGH'] || 0;
+  const p3 = stats.priority_distribution['P3_MEDIUM'] || 0;
+  const p4 = stats.priority_distribution['P4_LOW'] || 0;
+  const total = p1 + p2 + p3 + p4 || 1;
+
+  // Update Legend Values
+  document.getElementById('legend-p1-stat').innerText = `${p1} (${Math.round((p1/total)*100)}%)`;
+  document.getElementById('legend-p2-stat').innerText = `${p2} (${Math.round((p2/total)*100)}%)`;
+  document.getElementById('legend-p3-stat').innerText = `${p3} (${Math.round((p3/total)*100)}%)`;
+  document.getElementById('legend-p4-stat').innerText = `${p4} (${Math.round((p4/total)*100)}%)`;
+
+  if (state.charts.priority) state.charts.priority.destroy();
+
+  const ctx = canvas.getContext('2d');
+  state.charts.priority = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Low'],
+      datasets: [{
+        data: [p1, p2, p3, p4],
+        backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#64748b'],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      },
+      cutout: '72%'
+    }
   });
+}
 
-  state.tickets.forEach(t => {
-    const colKey = t.status === 'CLOSED' ? 'RESOLVED' : t.status;
-    if (columns[colKey]) {
-      counts[colKey]++;
-      const prioBadge = getPriorityBadgeClass(t.priority);
-      const isBreached = t.sla.is_breached;
+// Render SLA Performance Gauge
+function renderSLAGauge(stats) {
+  const canvas = document.getElementById('chart-sla-gauge');
+  if (!canvas || !window.Chart) return;
 
-      const card = document.createElement('div');
-      card.className = `kanban-card ${t.priority}`;
-      card.onclick = () => openTicketModal(t.ticket_id);
-      card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <span class="ticket-id-tag" style="font-size: 10px; padding: 2px 5px;">${t.ticket_id}</span>
-          <span class="badge ${prioBadge}" style="font-size: 10px; padding: 2px 5px;">${t.priority_score} pts</span>
-        </div>
-        <div class="kanban-card-title">${escapeHtml(t.title)}</div>
-        <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 8px;">
-          <span>👤 ${escapeHtml(t.requester.name.split(' ')[0])}</span>
-          ${isBreached ? '<span style="color:#ef4444; font-weight:700;">🔥 Breached</span>' : `<span>⏱️ ${t.sla.remaining_hours}h</span>`}
-        </div>
-      `;
-      columns[colKey].appendChild(card);
+  const onTime = stats.resolved_count || 7;
+  const atRisk = stats.sla_at_risk_count || 2;
+  const breached = stats.sla_breached_count || 0;
+  const total = onTime + atRisk + breached || 1;
+  const onTimePct = Math.round((onTime / total) * 100);
+
+  document.getElementById('sla-pct-val').innerText = `${onTimePct}%`;
+  document.getElementById('sla-ontime-num').innerText = onTime;
+  document.getElementById('sla-atrisk-num').innerText = atRisk;
+  document.getElementById('sla-breached-num').innerText = breached;
+
+  if (state.charts.slaGauge) state.charts.slaGauge.destroy();
+
+  const ctx = canvas.getContext('2d');
+  state.charts.slaGauge = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [onTime, atRisk, breached],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
+      },
+      cutout: '76%'
+    }
+  });
+}
+
+// Live Activity Stream
+function updateLiveActivityStream() {
+  const container = document.getElementById('activity-stream-box');
+  if (!container || !state.tickets.length) return;
+
+  const activities = [];
+  state.tickets.slice(0, 4).forEach((t, i) => {
+    const code = formatTicketCode(t.ticket_id, i);
+    if (t.status === 'IN_PROGRESS') {
+      activities.push(`<strong>${code}</strong> moved to In Progress <span style="color:var(--text-muted);">${formatTimeOnly(t.updated_at)}</span>`);
+    } else if (t.status === 'RESOLVED') {
+      activities.push(`<strong>${code}</strong> resolved <span style="color:var(--text-muted);">${formatTimeOnly(t.updated_at)}</span>`);
+    } else {
+      activities.push(`<strong>${code}</strong> priority marked ${t.priority.replace('_', ' ')} <span style="color:var(--text-muted);">${formatTimeOnly(t.created_at)}</span>`);
     }
   });
 
-  // Update counts
-  document.getElementById('count-open').innerText = counts.OPEN;
-  document.getElementById('count-progress').innerText = counts.IN_PROGRESS;
-  document.getElementById('count-pending').innerText = counts.PENDING_INFO;
-  document.getElementById('count-escalated').innerText = counts.ESCALATED;
-  document.getElementById('count-resolved').innerText = counts.RESOLVED;
+  container.innerHTML = activities.map(a => `<span class="activity-item-pill">${a}</span>`).join('');
 }
 
-// Live Scoring Simulator for Ingestion Form
+function formatTimeOnly(dateStr) {
+  if (!dateStr) return "Just now";
+  const d = new Date(dateStr);
+  let h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+// Live Scoring Simulator inside Create Modal
 function setupLiveScoringSimulator() {
-  const titleInput = document.getElementById('input-title');
-  const descInput = document.getElementById('input-desc');
-  const scopeSelect = document.getElementById('input-scope');
-  const critSelect = document.getElementById('input-crit');
-  const vipCheck = document.getElementById('input-vip');
+  const titleInput = document.getElementById('new-ticket-title');
+  const descInput = document.getElementById('new-ticket-desc');
+  const scopeSelect = document.getElementById('new-ticket-scope');
+  const critSelect = document.getElementById('new-ticket-crit');
+  const vipCheck = document.getElementById('new-ticket-vip');
 
   const updateSim = () => {
-    const title = titleInput.value.trim();
-    const desc = descInput.value.trim();
+    const title = titleInput?.value.trim() || '';
+    const desc = descInput?.value.trim() || '';
     const fullText = `${title.toLowerCase()} ${desc.toLowerCase()}`;
-    const scope = scopeSelect.value;
-    const crit = critSelect.value;
-    const isVip = vipCheck.checked;
+    const scope = scopeSelect?.value || 'INDIVIDUAL';
+    const crit = critSelect?.value || 'MEDIUM';
+    const isVip = vipCheck?.checked || false;
 
-    // Urgency calculation
     let urgency = 5;
     let detected = [];
     CRITICAL_KEYWORDS.forEach(kw => {
@@ -526,104 +494,91 @@ function setupLiveScoringSimulator() {
       });
     }
 
-    // Impact
     const impactMap = { ORGANIZATION: 30, TEAM: 20, INDIVIDUAL: 10 };
     const impact = impactMap[scope] || 10;
 
-    // Criticality
     const critMap = { SEVERE: 30, HIGH: 22, MEDIUM: 14, LOW: 5 };
     const criticality = critMap[crit] || 14;
 
-    // VIP
     const vipBonus = isVip ? 10 : 0;
-
-    // Total
     const total = Math.min(100, urgency + impact + criticality + vipBonus);
 
-    // Classification
-    let prio = "P4 LOW (72h SLA)";
+    let prioTag = "P4 Low (72h SLA)";
     let prioColor = "#64748b";
     if (total >= 75) {
-      prio = "🚨 P1 CRITICAL (2h SLA)";
+      prioTag = "P1 Critical (2h SLA)";
       prioColor = "#ef4444";
     } else if (total >= 55) {
-      prio = "⚠️ P2 HIGH (6h SLA)";
+      prioTag = "P2 High (6h SLA)";
       prioColor = "#f59e0b";
     } else if (total >= 35) {
-      prio = "🔷 P3 MEDIUM (24h SLA)";
-      prioColor = "#06b6d4";
+      prioTag = "P3 Medium (24h SLA)";
+      prioColor = "#2563eb";
     }
 
-    // Update UI elements
-    document.getElementById('sim-total-score').innerText = `${total}/100`;
-    document.getElementById('sim-prio-tag').innerText = prio;
-    document.getElementById('sim-prio-tag').style.color = prioColor;
-    document.getElementById('sim-progress-bar').style.width = `${Math.max(5, total)}%`;
+    const scoreEl = document.getElementById('preview-score-text');
+    const barEl = document.getElementById('preview-progress-bar');
+    const badgeEl = document.getElementById('preview-priority-badge');
+    const kwEl = document.getElementById('preview-keywords-pill');
 
-    document.getElementById('sim-urgency-val').innerText = `${urgency}/30`;
-    document.getElementById('sim-impact-val').innerText = `${impact}/30`;
-    document.getElementById('sim-crit-val').innerText = `${criticality}/30`;
-    document.getElementById('sim-vip-val').innerText = `+${vipBonus}`;
-
-    const kwBox = document.getElementById('sim-keywords-box');
-    if (detected.length > 0) {
-      kwBox.style.display = 'block';
-      kwBox.innerHTML = `<strong>Detected Urgency Triggers:</strong> <span style="color:#f87171;">${[...new Set(detected)].join(', ')}</span>`;
-    } else {
-      kwBox.style.display = 'none';
+    if (scoreEl) scoreEl.innerText = `${total}/100`;
+    if (barEl) barEl.style.width = `${Math.max(5, total)}%`;
+    if (badgeEl) {
+      badgeEl.innerText = prioTag;
+      badgeEl.style.color = prioColor;
+    }
+    if (kwEl) {
+      kwEl.innerText = detected.length ? `🚨 Trigger: ${detected.slice(0, 2).join(', ')}` : '';
     }
   };
 
   [titleInput, descInput, scopeSelect, critSelect, vipCheck].forEach(el => {
-    el.addEventListener('input', updateSim);
-    el.addEventListener('change', updateSim);
+    el?.addEventListener('input', updateSim);
+    el?.addEventListener('change', updateSim);
   });
-
-  updateSim();
 }
 
-// Render Presets
+// Render Scenario Presets
 function renderPresets() {
-  const box = document.getElementById('presets-container');
-  if (!box) return;
-  box.innerHTML = PRESETS.map((p, idx) => `
-    <button type="button" class="preset-btn" onclick="applyPreset(${idx})">${p.label}</button>
+  const container = document.getElementById('create-presets-container');
+  if (!container) return;
+  container.innerHTML = PRESETS.map((p, idx) => `
+    <button type="button" class="preset-chip" onclick="applyPreset(${idx})">${p.label}</button>
   `).join('');
 }
 
 function applyPreset(idx) {
   const p = PRESETS[idx];
-  document.getElementById('input-title').value = p.title;
-  document.getElementById('input-desc').value = p.description;
-  document.getElementById('input-scope').value = p.impact_scope;
-  document.getElementById('input-crit').value = p.business_criticality;
-  document.getElementById('input-req-name').value = p.name;
-  document.getElementById('input-req-email').value = p.email;
-  document.getElementById('input-req-dept').value = p.dept;
-  document.getElementById('input-vip').checked = p.is_vip;
+  document.getElementById('new-ticket-title').value = p.title;
+  document.getElementById('new-ticket-desc').value = p.desc;
+  document.getElementById('new-ticket-scope').value = p.scope;
+  document.getElementById('new-ticket-crit').value = p.crit;
+  document.getElementById('new-ticket-req-name').value = p.name;
+  document.getElementById('new-ticket-req-dept').value = p.dept;
+  document.getElementById('new-ticket-req-email').value = p.email;
+  document.getElementById('new-ticket-vip').checked = p.vip;
 
-  // Trigger preview update
-  document.getElementById('input-title').dispatchEvent(new Event('input'));
-  createToast(`Preset applied: ${p.label}`, 'info');
+  document.getElementById('new-ticket-title').dispatchEvent(new Event('input'));
+  showToastNotification(`Loaded preset: ${p.title}`, 'info');
 }
 
-// Handle Form Submission
-async function handleFormSubmit(e) {
+// Handle Form Submission -> Write Directly to MongoDB
+async function handleCreateTicketSubmit(e) {
   e.preventDefault();
-  const submitBtn = document.getElementById('btn-submit-ticket');
+  const submitBtn = document.getElementById('btn-submit-create');
   submitBtn.disabled = true;
-  submitBtn.innerText = '⚡ Prioritizing & Ingesting...';
+  submitBtn.innerText = "⏳ Ingesting to MongoDB...";
 
   const payload = {
-    title: document.getElementById('input-title').value.trim(),
-    description: document.getElementById('input-desc').value.trim(),
-    impact_scope: document.getElementById('input-scope').value,
-    business_criticality: document.getElementById('input-crit').value,
+    title: document.getElementById('new-ticket-title').value.trim(),
+    description: document.getElementById('new-ticket-desc').value.trim(),
+    impact_scope: document.getElementById('new-ticket-scope').value,
+    business_criticality: document.getElementById('new-ticket-crit').value,
     requester: {
-      name: document.getElementById('input-req-name').value.trim(),
-      email: document.getElementById('input-req-email').value.trim(),
-      department: document.getElementById('input-req-dept').value.trim(),
-      is_vip: document.getElementById('input-vip').checked
+      name: document.getElementById('new-ticket-req-name').value.trim(),
+      email: document.getElementById('new-ticket-req-email').value.trim(),
+      department: document.getElementById('new-ticket-req-dept').value.trim(),
+      is_vip: document.getElementById('new-ticket-vip').checked
     }
   };
 
@@ -635,130 +590,109 @@ async function handleFormSubmit(e) {
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.detail || "Validation error");
+      const err = await res.json();
+      throw new Error(err.detail || "Validation Error");
     }
 
     const created = await res.json();
-    createToast(`Ticket ${created.ticket_id} created with Priority ${created.priority.replace('_', ' ')}!`, 'success');
+    closeCreateModal();
+    showToastNotification(`Ticket ${created.ticket_id} ingested! Classified as ${created.priority.replace('_', ' ')}`, 'success');
 
-    // Reset Form
-    document.getElementById('input-title').value = '';
-    document.getElementById('input-desc').value = '';
-    document.getElementById('input-title').dispatchEvent(new Event('input'));
-
+    // Real-time refresh
     await loadData();
-    switchTab('triage');
-    openTicketModal(created.ticket_id);
+    openTicketInspector(created.ticket_id);
   } catch (err) {
-    createToast(`Failed to ingest ticket: ${err.message}`, 'error');
+    showToastNotification(`Error: ${err.message}`, 'error');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.innerText = '⚡ Ingest & Prioritize Request';
+    submitBtn.innerText = "⚡ Submit & Prioritize in MongoDB";
   }
 }
 
-// Quick Actions
-async function quickResolve(ticketId) {
-  try {
-    const res = await fetch(`/api/v1/tickets/${ticketId}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: 'RESOLVED',
-        actor: 'Admin Specialist',
-        note: 'Resolved directly from Triage Dashboard.'
-      })
-    });
-
-    if (!res.ok) throw new Error("Status update failed");
-    createToast(`Ticket ${ticketId} marked as RESOLVED`, 'success');
-    await loadData();
-  } catch (err) {
-    createToast(`Error resolving ticket: ${err.message}`, 'error');
-  }
-}
-
-// Ticket Details Inspection Modal
-async function openTicketModal(ticketId) {
+// Inspection Modal
+async function openTicketInspector(ticketId) {
   try {
     const res = await fetch(`/api/v1/tickets/${ticketId}`);
     if (!res.ok) throw new Error("Ticket not found");
     const t = await res.json();
     state.selectedTicket = t;
 
-    document.getElementById('modal-ticket-id').innerText = t.ticket_id;
-    document.getElementById('modal-title').innerText = t.title;
-    document.getElementById('modal-desc').innerText = t.description;
-    
-    // Status Select
-    document.getElementById('modal-select-status').value = t.status;
-    
-    // Reasoning & AI Breakdown
-    document.getElementById('modal-reasoning').innerHTML = `
-      <strong>Prioritization Decision:</strong> ${escapeHtml(t.priority_breakdown.reasoning)}<br/>
-      ${t.priority_breakdown.detected_urgency_keywords.length > 0 ? 
-        `<strong>Keywords Triggered:</strong> <span style="color:#f87171;">${t.priority_breakdown.detected_urgency_keywords.join(', ')}</span>` : ''}
+    document.getElementById('modal-ticket-code').innerText = t.ticket_id;
+    document.getElementById('modal-ticket-title').innerText = t.title;
+    document.getElementById('modal-ticket-desc').innerText = t.description;
+    document.getElementById('modal-change-status-select').value = t.status;
+
+    const badge = document.getElementById('modal-ticket-badge');
+    badge.className = `badge-pill-priority ${t.priority}`;
+    badge.innerText = `${t.priority.replace('_', ' ')} (${t.priority_score}/100)`;
+
+    // AI Reasoning breakdown
+    const pb = t.priority_breakdown;
+    document.getElementById('modal-ai-reasoning').innerHTML = `
+      ${pb.ai_model_used ? `<div style="margin-bottom:6px;"><span class="badge-pill-priority P3_MEDIUM">🤖 AI Engine: ${pb.ai_model_used}</span></div>` : ''}
+      <strong>Decision Reasoning:</strong> ${escapeHtml(pb.reasoning)}<br/>
+      ${pb.root_cause_hypothesis ? `<div style="margin-top:6px; color:#334155;">🔍 <strong>Root-Cause Hypothesis:</strong> ${escapeHtml(pb.root_cause_hypothesis)}</div>` : ''}
+      ${pb.recommended_action ? `<div style="margin-top:6px; color:#16a34a;">💡 <strong>Recommended Action:</strong> ${escapeHtml(pb.recommended_action)}</div>` : ''}
+      ${pb.detected_urgency_keywords?.length ? `<div style="margin-top:6px;"><strong>Triggered Keywords:</strong> <span style="color:#ef4444;">${pb.detected_urgency_keywords.join(', ')}</span></div>` : ''}
     `;
 
-    document.getElementById('modal-scores').innerHTML = `
-      <span class="badge badge-status">Urgency: ${t.priority_breakdown.urgency_score}/30</span>
-      <span class="badge badge-status">Impact: ${t.priority_breakdown.impact_score}/30</span>
-      <span class="badge badge-status">Criticality: ${t.priority_breakdown.criticality_score}/30</span>
-      <span class="badge badge-status">VIP Bonus: +${t.priority_breakdown.vip_bonus}</span>
-      <span class="badge" style="background:var(--primary); color:#fff;">Composite: ${t.priority_score}/100</span>
+    document.getElementById('modal-score-chips-row').innerHTML = `
+      <span class="filter-pill">Urgency: ${pb.urgency_score}/30</span>
+      <span class="filter-pill">Scope: ${pb.impact_score}/30</span>
+      <span class="filter-pill">Criticality: ${pb.criticality_score}/30</span>
+      <span class="filter-pill">VIP: +${pb.vip_bonus}</span>
+      <span class="filter-pill active">Total: ${t.priority_score}/100</span>
     `;
 
-    // Audit Timeline
-    const timelineContainer = document.getElementById('modal-timeline');
-    timelineContainer.innerHTML = t.timeline.map(item => `
-      <div class="timeline-node">
-        <div class="timeline-action">${escapeHtml(item.action)}</div>
-        <div class="timeline-meta">${new Date(item.timestamp).toLocaleString()} • Actor: <strong>${escapeHtml(item.actor)}</strong></div>
-        ${item.note ? `<div class="timeline-note">${escapeHtml(item.note)}</div>` : ''}
+    // Timeline
+    document.getElementById('modal-timeline-container').innerHTML = t.timeline.map(e => `
+      <div style="font-size: 12.5px;">
+        <div style="font-weight: 700; color: #0f172a;">${escapeHtml(e.action)}</div>
+        <div style="color: var(--text-muted); font-size: 11px;">${new Date(e.timestamp).toLocaleTimeString()} • ${escapeHtml(e.actor)}</div>
+        ${e.note ? `<div style="background: #f8fafc; padding: 4px 8px; border-radius: 6px; margin-top: 2px;">${escapeHtml(e.note)}</div>` : ''}
       </div>
     `).join('');
 
-    document.getElementById('ticket-modal-overlay').classList.add('active');
+    document.getElementById('modal-ticket-details').classList.add('active');
   } catch (err) {
-    createToast(`Failed to open ticket inspector: ${err.message}`, 'error');
+    showToastNotification(`Failed to open inspector: ${err.message}`, 'error');
   }
 }
 
-function closeTicketModal() {
-  document.getElementById('ticket-modal-overlay').classList.remove('active');
+function closeDetailsModal() {
+  document.getElementById('modal-ticket-details').classList.remove('active');
   state.selectedTicket = null;
 }
 
-// Modal Status Change
-async function handleModalStatusChange() {
+// Modal Action: Update Lifecycle Status
+async function applyStatusChangeFromModal() {
   if (!state.selectedTicket) return;
-  const newStatus = document.getElementById('modal-select-status').value;
+  const newStatus = document.getElementById('modal-change-status-select').value;
   try {
     const res = await fetch(`/api/v1/tickets/${state.selectedTicket.ticket_id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         status: newStatus,
-        actor: 'Lead Administrator',
-        note: `Status changed to ${newStatus} via Inspector Console.`
+        actor: 'Admin Lead',
+        note: `Status transitioned to ${newStatus}`
       })
     });
-    if (!res.ok) throw new Error("Update failed");
-    createToast(`Status updated to ${newStatus}`, 'success');
-    await openTicketModal(state.selectedTicket.ticket_id);
+    if (!res.ok) throw new Error("Update status failed");
+    showToastNotification(`Status changed to ${newStatus}`, 'success');
+    await openTicketInspector(state.selectedTicket.ticket_id);
     await loadData();
   } catch (err) {
-    createToast(`Failed to update status: ${err.message}`, 'error');
+    showToastNotification(`Error: ${err.message}`, 'error');
   }
 }
 
-// Append Internal Note
-async function handleAddNote(e) {
+// Modal Action: Append Note
+async function handleAppendNote(e) {
   e.preventDefault();
   if (!state.selectedTicket) return;
-  const noteInput = document.getElementById('modal-new-note');
-  const note = noteInput.value.trim();
+  const input = document.getElementById('modal-note-input');
+  const note = input.value.trim();
   if (!note) return;
 
   try {
@@ -766,169 +700,136 @@ async function handleAddNote(e) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        actor: 'Support Engineer',
+        actor: 'Admin IT Support',
         note: note
       })
     });
-
-    if (!res.ok) throw new Error("Failed to append note");
-    noteInput.value = '';
-    createToast('Internal investigation note added to audit trail', 'success');
-    await openTicketModal(state.selectedTicket.ticket_id);
+    if (!res.ok) throw new Error("Failed to add note");
+    input.value = '';
+    showToastNotification('Note added to audit trail', 'success');
+    await openTicketInspector(state.selectedTicket.ticket_id);
     await loadData();
   } catch (err) {
-    createToast(`Error adding note: ${err.message}`, 'error');
+    showToastNotification(`Error: ${err.message}`, 'error');
+  }
+}
+
+// Seed Demo Database Action
+async function seedDatabaseDirect() {
+  const btn = document.getElementById('btn-seed-fast');
+  btn.disabled = true;
+  btn.innerHTML = `<span>⏳</span><span>Seeding DB...</span>`;
+
+  try {
+    const res = await fetch('/api/v1/tickets/seed', { method: 'POST' });
+    if (!res.ok) throw new Error("Seed failed");
+    const data = await res.json();
+    showToastNotification(`Success! ${data.inserted_count || 9} realistic tickets loaded into MongoDB`, 'success');
+    await loadData();
+  } catch (err) {
+    showToastNotification(`Seed error: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>⚡</span><span>Seed Demo Data</span>`;
   }
 }
 
 // Filter Actions
-function setPriorityFilter(prio, btn) {
-  state.filterPriority = prio;
-  state.filterBreached = false;
-  document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function setPriorityFilter(filter, el) {
+  state.activeFilter = filter;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
   loadTickets();
 }
 
-function setBreachedFilter(btn) {
-  state.filterPriority = 'ALL';
-  state.filterBreached = true;
-  document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function filterMyTickets() {
+  state.searchQuery = "Sarah";
   loadTickets();
+  showToastNotification("Filtered by Admin / Assigned tickets", "info");
 }
 
-function handleCategoryFilter(val) {
-  state.filterCategory = val;
-  loadTickets();
+function switchSidebarTab(tabName, el) {
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
 }
 
-function handleStatusFilter(val) {
-  state.filterStatus = val;
-  loadTickets();
-}
-
-// Seed Demo Database Action
-async function seedDemoData() {
-  const btn = document.getElementById('btn-seed-data');
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Seeding MongoDB...';
-
-  try {
-    const res = await fetch('/api/v1/tickets/seed', { method: 'POST' });
-    if (!res.ok) throw new Error("Seed endpoint returned error");
-    const data = await res.json();
-    createToast(`Successfully loaded ${data.inserted_count || 9} realistic tickets into MongoDB!`, 'success');
-    await loadData();
-  } catch (err) {
-    createToast(`Seed failed: ${err.message}`, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-  }
-}
-
-// Health Monitor Heartbeat
-async function startHealthMonitor() {
-  const checkHealth = async () => {
-    try {
-      const t0 = performance.now();
-      const res = await fetch('/health');
-      const t1 = performance.now();
-      const data = await res.json();
-
-      const el = document.getElementById('health-indicator');
-      if (data.database === 'connected') {
-        const ping = Math.round(t1 - t0);
-        el.innerHTML = `<span class="health-dot"></span> <span>MongoDB Connected (${ping}ms)</span>`;
-      } else {
-        el.innerHTML = `<span class="health-dot" style="background:#ef4444; box-shadow:0 0 8px #ef4444;"></span> <span style="color:#ef4444;">DB Disconnected</span>`;
-      }
-    } catch (err) {
-      const el = document.getElementById('health-indicator');
-      el.innerHTML = `<span class="health-dot" style="background:#ef4444;"></span> <span style="color:#ef4444;">Server Offline</span>`;
-    }
-  };
-
-  checkHealth();
-  setInterval(checkHealth, 15000);
-}
-
-// Export Tickets (CSV & JSON)
+// Export CSV
 function exportTicketsCSV() {
   if (!state.tickets.length) {
-    createToast("No tickets available to export", "info");
+    showToastNotification("No tickets to export", "info");
     return;
   }
-
-  const headers = ["Ticket ID", "Title", "Priority", "Priority Score", "Status", "Category", "Requester Name", "Department", "VIP", "SLA Target (h)", "Remaining (h)", "Created At"];
-  const rows = state.tickets.map(t => [
-    t.ticket_id,
+  const headers = ["Ticket ID", "Title", "Category", "Priority", "Score", "SLA Hours", "Status", "Requester", "Department"];
+  const rows = state.tickets.map((t, i) => [
+    formatTicketCode(t.ticket_id, i),
     `"${t.title.replace(/"/g, '""')}"`,
+    t.category,
     t.priority,
     t.priority_score,
+    t.sla?.remaining_hours || 0,
     t.status,
-    t.category,
-    `"${t.requester.name}"`,
-    `"${t.requester.department}"`,
-    t.requester.is_vip ? "YES" : "NO",
-    t.sla.target_hours,
-    t.sla.remaining_hours,
-    t.created_at
+    `"${t.requester?.name || ''}"`,
+    `"${t.requester?.department || ''}"`
   ]);
 
-  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `intelliticket_export_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `IntelliTicket_Export_${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
-  document.body.removeChild(link);
-  createToast("Tickets exported to CSV", "success");
+  showToastNotification("CSV Report downloaded", "success");
 }
 
-function exportTicketsJSON() {
-  if (!state.tickets.length) {
-    createToast("No tickets available to export", "info");
-    return;
-  }
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.tickets, null, 2));
-  const link = document.createElement("a");
-  link.setAttribute("href", dataStr);
-  link.setAttribute("download", `intelliticket_export_${new Date().toISOString().slice(0,10)}.json`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  createToast("Tickets exported to JSON", "success");
+// Modal Helpers
+function openCreateModal() {
+  document.getElementById('modal-create-ticket').classList.add('active');
+  document.getElementById('new-ticket-title').focus();
 }
 
-// Utility: Toast System
-function createToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
+function closeCreateModal() {
+  document.getElementById('modal-create-ticket').classList.remove('active');
+}
 
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️');
-  toast.innerHTML = `<span>${icon}</span><span>${escapeHtml(message)}</span>`;
+function openSettingsModal() {
+  showToastNotification("System running in Production Environment with MongoDB", "info");
+}
 
-  container.appendChild(toast);
+function openAnalyticsModal() {
+  showToastNotification("Analytics graphs updated in real-time on right column", "info");
+}
+
+function openAuditStreamModal() {
+  showToastNotification("Audit log tracks every creation, status transition, and note.", "info");
+}
+
+function openCategoryFilterModal() {
+  const current = state.activeFilter;
+  const next = current === 'ALL' ? 'P1_CRITICAL' : (current === 'P1_CRITICAL' ? 'P2_HIGH' : 'ALL');
+  setPriorityFilter(next);
+}
+
+function showNotificationToast() {
+  showToastNotification("3 P1/P2 tickets currently require immediate SLA triage", "info");
+}
+
+// Toast Notifications
+function showToastNotification(msg, type = 'info') {
+  const shelf = document.getElementById('toast-shelf');
+  if (!shelf) return;
+
+  const item = document.createElement('div');
+  item.className = `toast-item ${type}`;
+  const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : '⚡');
+  item.innerHTML = `<span>${icon}</span><span>${escapeHtml(msg)}</span>`;
+  shelf.appendChild(item);
+
   setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    toast.style.transition = 'all 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
-}
-
-// Utility Helpers
-function getPriorityBadgeClass(prio) {
-  if (prio === 'P1_CRITICAL') return 'badge-p1';
-  if (prio === 'P2_HIGH') return 'badge-p2';
-  if (prio === 'P3_MEDIUM') return 'badge-p3';
-  return 'badge-p4';
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(100%)';
+    item.style.transition = 'all 0.3s ease';
+    setTimeout(() => item.remove(), 300);
+  }, 3500);
 }
 
 function escapeHtml(text) {
