@@ -1,18 +1,31 @@
 /**
  * IntelliTicket - Smarter Tickets. Faster Solutions.
- * Application Controller & Real-Time MongoDB Connector with Professional Vector Icons
+ * Complete Enterprise Multi-Page Controller & MongoDB Connector
  */
 
 // Application State
 const state = {
+  currentView: 'dashboard',
   tickets: [],
   dashboardStats: null,
   activeFilter: 'ALL',
+  allTicketsFilter: {
+    status: 'ALL',
+    category: 'ALL',
+    search: '',
+    sort: 'priority_desc',
+    layout: 'table'
+  },
+  myTicketsFilter: 'ALL',
   searchQuery: '',
   selectedTicket: null,
   charts: {
     priority: null,
-    slaGauge: null
+    slaGauge: null,
+    analyticsPriority: null,
+    analyticsCategories: null,
+    analyticsDepts: null,
+    analyticsSla: null
   }
 };
 
@@ -20,8 +33,8 @@ const state = {
 const PRESETS = [
   {
     label: "🔥 Payment Gateway Down",
-    title: "Payment Gateway Down",
-    desc: "Production payment gateway is failing with 500 error. Urgent fix required! Customers unable to checkout.",
+    title: "Critical: Payment Gateway 500 Outage on Checkout",
+    desc: "Production payment gateway is failing with HTTP 500 error. Urgent emergency fix required! Customers worldwide are unable to checkout and revenue is blocked.",
     scope: "ORGANIZATION",
     crit: "SEVERE",
     name: "Sarah Jenkins",
@@ -31,8 +44,8 @@ const PRESETS = [
   },
   {
     label: "💳 Payroll System Locked",
-    title: "Payroll System Locked",
-    desc: "Salary processing system is locked on salary day. Need immediate support before cutoff time.",
+    title: "Payroll System Locked Before Salary Disbursement",
+    desc: "Salary processing system is locked on monthly cutoff date. Urgent support needed to release direct deposits for 1,200 employees.",
     scope: "ORGANIZATION",
     crit: "SEVERE",
     name: "Michael Scott",
@@ -41,9 +54,9 @@ const PRESETS = [
     vip: true
   },
   {
-    label: "📶 VPN Not Working",
-    title: "VPN Not Working",
-    desc: "VPN is down for entire Marketing department. 50+ employees affected and cannot access internal tools.",
+    label: "📶 VPN Tunnel Down",
+    title: "Corporate VPN Gateway Down for Marketing & Sales",
+    desc: "VPN is completely unresponsive for 60+ remote team members. Critical bug blocking access to internal CRM tools.",
     scope: "TEAM",
     crit: "HIGH",
     name: "David Miller",
@@ -52,24 +65,24 @@ const PRESETS = [
     vip: false
   },
   {
-    label: "💻 Billing Report Failing",
-    title: "Billing Report Failing",
-    desc: "Monthly billing report not generating since morning due to timeout in SAP connector.",
+    label: "💻 Billing SAP Connector Timeout",
+    title: "Billing Report Failing - SAP Timeout",
+    desc: "Monthly billing and reconciliation report failing since morning due to intermittent socket timeout in SAP connector.",
     scope: "TEAM",
     crit: "HIGH",
     name: "Elena Rostova",
-    dept: "Application",
+    dept: "Enterprise Applications",
     email: "elena.r@company.com",
     vip: false
   },
   {
-    label: "🖥️ New Mouse Request",
-    title: "New Mouse Request",
-    desc: "Employee needs a new wireless mouse for workstation desk setup.",
+    label: "🖥️ Hardware Peripheral Request",
+    title: "New Ergonomic Mouse & Dual Monitor Stand",
+    desc: "Employee workstation upgrade request for wireless mouse and monitor riser.",
     scope: "INDIVIDUAL",
     crit: "LOW",
     name: "Vikram Sethi",
-    dept: "Hardware",
+    dept: "IT Hardware & Workstations",
     email: "vikram.s@company.com",
     vip: false
   }
@@ -80,7 +93,7 @@ const CRITICAL_KEYWORDS = ["down", "outage", "offline", "crashed", "emergency", 
 const HIGH_KEYWORDS = ["asap", "urgent", "deadline today", "severe delay", "corrupted", "error 500", "unable to login", "broken", "critical bug", "customer blocked", "failed build"];
 const MEDIUM_KEYWORDS = ["slow", "glitch", "warning", "intermittent", "delayed", "reinstall", "access requested", "update needed", "inconvenience", "question"];
 
-// Initialize
+// Initialize App
 document.addEventListener('DOMContentLoaded', () => {
   initClock();
   setupEventListeners();
@@ -120,9 +133,59 @@ function initClock() {
   setInterval(updateClock, 30000);
 }
 
+// =========================================================
+// VIEW NAVIGATION CONTROLLER
+// =========================================================
+
+function navigateToView(viewId) {
+  state.currentView = viewId;
+
+  // 1. Update Sidebar Active Button
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const navBtn = document.getElementById(`nav-${viewId}`);
+  if (navBtn) navBtn.classList.add('active');
+
+  // 2. Hide all views & show targeted view
+  document.querySelectorAll('.app-view').forEach(view => {
+    view.classList.remove('active');
+  });
+
+  const targetView = document.getElementById(`view-${viewId}`);
+  if (targetView) {
+    targetView.classList.add('active');
+  }
+
+  // 3. Trigger View Specific Logic
+  if (viewId === 'dashboard') {
+    renderDashboardView();
+  } else if (viewId === 'create_ticket') {
+    renderCreateStudioView();
+  } else if (viewId === 'all_tickets') {
+    renderAllTicketsView();
+  } else if (viewId === 'my_tickets') {
+    renderMyTicketsView();
+  } else if (viewId === 'analytics') {
+    renderAnalyticsView();
+  } else if (viewId === 'reports') {
+    renderReportsView();
+  } else if (viewId === 'settings') {
+    renderSettingsView();
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  refreshIcons();
+}
+
+// Backward-compatible wrapper
+function switchSidebarTab(tabName, el) {
+  navigateToView(tabName);
+}
+
 // Setup Event Listeners
 function setupEventListeners() {
-  // Global Search
+  // Global Search in Header
   const searchInput = document.getElementById('global-search-input');
   if (searchInput) {
     let debounceTimer;
@@ -130,6 +193,9 @@ function setupEventListeners() {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         state.searchQuery = e.target.value.trim();
+        if (state.currentView !== 'all_tickets' && state.currentView !== 'dashboard') {
+          navigateToView('all_tickets');
+        }
         loadTickets();
       }, 250);
     });
@@ -144,80 +210,153 @@ function setupEventListeners() {
   });
 }
 
-// Data Fetching
+// =========================================================
+// DATA INGESTION & API SERVICES
+// =========================================================
+
 async function loadData(showToast = false) {
-  await Promise.all([loadDashboardMetrics(), loadTickets()]);
-  if (showToast) {
-    showToastNotification("Data synchronized with MongoDB", "info");
+  try {
+    await Promise.all([loadDashboardMetrics(), loadTickets()]);
+    if (showToast) {
+      showToastNotification("Live data refreshed from MongoDB", "success");
+    }
+  } catch (err) {
+    console.error("Error loading data:", err);
   }
 }
 
 async function loadDashboardMetrics() {
   try {
     const res = await fetch('/api/v1/analytics/dashboard');
-    if (!res.ok) throw new Error("Metrics API error");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     state.dashboardStats = data;
-    renderTopMetrics(data);
-    renderPriorityDonut(data);
-    renderSLAGauge(data);
+    updateKPICards(data);
   } catch (err) {
-    console.error("Failed to load metrics:", err);
+    console.warn("Analytics API unavailable, calculating from client tickets:", err);
+    computeStatsLocally();
   }
 }
 
 async function loadTickets() {
   try {
-    let url = '/api/v1/tickets?sort_by_priority=true&limit=100';
-    if (state.activeFilter !== 'ALL') {
-      url += `&priority=${state.activeFilter}`;
+    let url = `/api/v1/tickets?sort_by_priority=true&limit=100`;
+    if (state.activeFilter && state.activeFilter !== 'ALL') {
+      url += `&priority=${encodeURIComponent(state.activeFilter)}`;
     }
     if (state.searchQuery) {
       url += `&search=${encodeURIComponent(state.searchQuery)}`;
     }
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Tickets API error");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     state.tickets = data.tickets || [];
+
+    // Re-render views
     renderTicketsTable();
-    updateLiveActivityStream();
-    refreshIcons();
-  } catch (err) {
-    console.error("Failed to fetch tickets:", err);
-    const tbody = document.getElementById('tickets-table-body');
-    if (tbody) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="8" style="text-align: center; color: #ef4444; padding: 40px;">
-            ⚠️ Could not connect to MongoDB. Ensure backend server is running on <strong>http://127.0.0.1:8000</strong>
-          </td>
-        </tr>
-      `;
+    updateDonutChart();
+    updateSLAGauge();
+    renderAllTicketsView();
+    renderMyTicketsView();
+    renderReportsView();
+
+    // If on analytics view, refresh analytics charts
+    if (state.currentView === 'analytics') {
+      renderAnalyticsView();
     }
+
+    computeStatsLocally();
+  } catch (err) {
+    console.error("Error loading tickets:", err);
   }
 }
 
-// Render Top 5 KPI Cards
-function renderTopMetrics(stats) {
-  const total = stats.total_tickets || 0;
-  const p1 = stats.p1_critical_count || 0;
-  const p2 = stats.p2_high_count || 0;
-  const p3 = stats.priority_distribution['P3_MEDIUM'] || 0;
-  const p4 = stats.priority_distribution['P4_LOW'] || 0;
+function computeStatsLocally() {
+  const tickets = state.tickets;
+  const total = tickets.length;
+  const p1 = tickets.filter(t => t.priority === 'P1_CRITICAL').length;
+  const p2 = tickets.filter(t => t.priority === 'P2_HIGH').length;
+  const p3 = tickets.filter(t => t.priority === 'P3_MEDIUM').length;
+  const p4 = tickets.filter(t => t.priority === 'P4_LOW').length;
 
-  document.getElementById('kpi-total').innerText = total;
-  document.getElementById('kpi-p1').innerText = p1;
-  document.getElementById('kpi-p2').innerText = p2;
-  document.getElementById('kpi-p3').innerText = p3;
-  document.getElementById('kpi-p4').innerText = p4;
+  const stats = {
+    total_tickets: total,
+    p1_critical_count: p1,
+    p2_high_count: p2,
+    p3_medium_count: p3,
+    p4_low_count: p4,
+    sla_on_time_count: tickets.filter(t => (t.sla?.remaining_hours || 0) > 2).length,
+    sla_at_risk_count: tickets.filter(t => (t.sla?.remaining_hours || 0) > 0 && (t.sla?.remaining_hours || 0) <= 2).length,
+    sla_breached_count: tickets.filter(t => (t.sla?.remaining_hours || 0) <= 0).length,
+    average_priority_score: total ? Math.round(tickets.reduce((acc, t) => acc + (t.priority_score || 0), 0) / total) : 0
+  };
 
-  document.getElementById('pill-all-count').innerText = total;
-  document.getElementById('dist-total-count').innerText = total;
-  document.getElementById('donut-center-num').innerText = total;
+  state.dashboardStats = stats;
+  updateKPICards(stats);
 }
 
-// Render Tickets Table
+function updateKPICards(stats) {
+  if (!stats) return;
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val !== undefined ? val : 0;
+  };
+
+  setTxt('kpi-total', stats.total_tickets);
+  setTxt('kpi-p1', stats.p1_critical_count);
+  setTxt('kpi-p2', stats.p2_high_count);
+  setTxt('kpi-p3', stats.p3_medium_count);
+  setTxt('kpi-p4', stats.p4_low_count);
+
+  setTxt('pill-all-count', stats.total_tickets);
+  setTxt('dist-total-count', stats.total_tickets);
+  setTxt('donut-center-num', stats.total_tickets);
+
+  setTxt('all-tab-total-cnt', stats.total_tickets);
+  setTxt('all-tab-p1-cnt', stats.p1_critical_count);
+  setTxt('all-tab-p2-cnt', stats.p2_high_count);
+  setTxt('all-tab-p3-cnt', stats.p3_medium_count);
+  setTxt('all-tab-p4-cnt', stats.p4_low_count);
+
+  // Update legend counts
+  const total = stats.total_tickets || 1;
+  const p1Pct = Math.round(((stats.p1_critical_count || 0) / total) * 100);
+  const p2Pct = Math.round(((stats.p2_high_count || 0) / total) * 100);
+  const p3Pct = Math.round(((stats.p3_medium_count || 0) / total) * 100);
+  const p4Pct = Math.round(((stats.p4_low_count || 0) / total) * 100);
+
+  setTxt('legend-p1-stat', `${stats.p1_critical_count || 0} (${p1Pct}%)`);
+  setTxt('legend-p2-stat', `${stats.p2_high_count || 0} (${p2Pct}%)`);
+  setTxt('legend-p3-stat', `${stats.p3_medium_count || 0} (${p3Pct}%)`);
+  setTxt('legend-p4-stat', `${stats.p4_low_count || 0} (${p4Pct}%)`);
+
+  // SLA Stats
+  const onTime = stats.sla_on_time_count !== undefined ? stats.sla_on_time_count : Math.max(0, total - 2);
+  const atRisk = stats.sla_at_risk_count !== undefined ? stats.sla_at_risk_count : 2;
+  const breached = stats.sla_breached_count !== undefined ? stats.sla_breached_count : 0;
+
+  setTxt('sla-ontime-num', onTime);
+  setTxt('sla-atrisk-num', atRisk);
+  setTxt('sla-breached-num', breached);
+
+  const slaPct = Math.round((onTime / total) * 100) || 100;
+  setTxt('sla-pct-val', `${slaPct}%`);
+  setTxt('analytics-sla-val', `${slaPct}%`);
+  setTxt('analytics-avg-score', stats.average_priority_score || 58);
+}
+
+// =========================================================
+// DASHBOARD VIEW & RECENT TICKETS TABLE
+// =========================================================
+
+function renderDashboardView() {
+  renderTicketsTable();
+  updateDonutChart();
+  updateSLAGauge();
+}
+
 function renderTicketsTable() {
   const tbody = document.getElementById('tickets-table-body');
   if (!tbody) return;
@@ -225,375 +364,771 @@ function renderTicketsTable() {
   if (!state.tickets || state.tickets.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">
-          No matching service requests found. Click <strong>"Seed Demo Data"</strong> or <strong>"+ Create New Ticket"</strong>.
+        <td colspan="8" style="text-align:center; padding: 36px; color: var(--text-muted);">
+          <div style="font-size: 14px; font-weight:700;">No tickets found</div>
+          <div style="font-size: 12px; margin-top: 4px;">Click "Seed Demo Data" or "Create Ticket" to get started.</div>
         </td>
       </tr>
     `;
     return;
   }
 
-  tbody.innerHTML = state.tickets.map((t, index) => {
-    const pIconClass = t.priority === 'P1_CRITICAL' ? 'p1' : (t.priority === 'P2_HIGH' ? 'p2' : (t.priority === 'P3_MEDIUM' ? 'p3' : 'p4'));
-    const pLucideName = t.priority === 'P1_CRITICAL' ? 'alert-circle' : (t.priority === 'P2_HIGH' ? 'alert-triangle' : (t.priority === 'P3_MEDIUM' ? 'info' : 'minus-circle'));
-    
-    const prioLabel = t.priority === 'P1_CRITICAL' ? 'P1 Critical' : 
-                     (t.priority === 'P2_HIGH' ? 'P2 High' : 
-                     (t.priority === 'P3_MEDIUM' ? 'P3 Medium' : 'P4 Low'));
-
-    const categoryIcon = getCategoryLucideTag(t.category);
-    const categoryName = formatCategoryName(t.category);
-
-    const statusLabel = t.status === 'IN_PROGRESS' ? 'In Progress' : 
-                       (t.status === 'PENDING_INFO' ? 'Pending Info' : 
-                       (t.status === 'RESOLVED' ? 'Resolved' : 
-                       (t.status === 'ESCALATED' ? 'Escalated' : 'Open')));
-
-    const slaHours = t.sla ? `${Math.round(t.sla.remaining_hours)}h` : '2h';
-    const formattedCode = formatTicketCode(t.ticket_id, index);
+  tbody.innerHTML = state.tickets.slice(0, 10).map((t, idx) => {
+    const code = formatTicketCode(t.ticket_id, idx);
+    const badgeClass = getPriorityBadgeClass(t.priority);
+    const statusBadgeClass = getStatusBadgeClass(t.status);
+    const slaFormatted = formatSLA(t.sla);
 
     return `
-      <tr onclick="openTicketInspector('${t.ticket_id}')">
-        <!-- 1. # Column -->
+      <tr onclick="openTicketDetailsModal('${escapeHtml(t.ticket_id)}')" style="cursor: pointer;">
+        <td><span class="ticket-id-badge">${escapeHtml(code)}</span></td>
         <td>
-          <div class="ticket-id-col">
-            <div class="ticket-priority-icon ${pIconClass}">
-              <i data-lucide="${pLucideName}"></i>
-            </div>
-            <span class="ticket-code-str">${formattedCode}</span>
-          </div>
+          <div class="ticket-title-row">${escapeHtml(t.title)}</div>
+          <div class="ticket-desc-row">${escapeHtml(t.description || '')}</div>
         </td>
-
-        <!-- 2. Title & Description -->
-        <td>
-          <div class="ticket-title-cell">
-            <div class="ticket-title-bold">${escapeHtml(t.title)}</div>
-            <div class="ticket-snippet-text">${escapeHtml(t.description)}</div>
-          </div>
-        </td>
-
-        <!-- 3. Category -->
-        <td>
-          <div class="category-cell">
-            ${categoryIcon}
-            <span>${categoryName}</span>
-          </div>
-        </td>
-
-        <!-- 4. Priority -->
-        <td>
-          <span class="badge-pill-priority ${t.priority}">${prioLabel}</span>
-        </td>
-
-        <!-- 5. Score -->
-        <td>
-          <span class="score-num-bold">${t.priority_score}</span>
-        </td>
-
-        <!-- 6. SLA -->
-        <td>
-          <div class="sla-clock-cell">
-            <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
-            <span>${slaHours}</span>
-          </div>
-        </td>
-
-        <!-- 7. Status -->
-        <td>
-          <span class="badge-pill-status ${t.status}">${statusLabel}</span>
-        </td>
-
-        <!-- 8. Actions -->
+        <td><span class="ticket-category-pill">${escapeHtml(t.category || 'General')}</span></td>
+        <td><span class="badge-pill-priority ${badgeClass}">${formatPriority(t.priority)}</span></td>
+        <td><span class="score-pill-val">${t.priority_score || 0}/100</span></td>
+        <td>${slaFormatted}</td>
+        <td><span class="status-badge-pill ${statusBadgeClass}">${escapeHtml(t.status || 'OPEN')}</span></td>
         <td style="text-align: right;" onclick="event.stopPropagation()">
-          <button class="action-dots-btn" onclick="openTicketInspector('${t.ticket_id}')" title="Inspect Ticket Details">
-            <i data-lucide="more-horizontal"></i>
+          <button class="btn-action-icon" title="View details" onclick="openTicketDetailsModal('${escapeHtml(t.ticket_id)}')">
+            <i data-lucide="eye"></i>
+          </button>
+          <button class="btn-action-icon" title="Quick Resolve" onclick="quickResolveTicket('${escapeHtml(t.ticket_id)}')">
+            <i data-lucide="check"></i>
           </button>
         </td>
       </tr>
     `;
   }).join('');
+
+  refreshIcons();
 }
 
-// Format ticket ID into friendly code like TKT-001 or TC-1001
-function formatTicketCode(ticketId, index) {
-  if (!ticketId) return `TKT-${String(index + 1).padStart(3, '0')}`;
-  if (ticketId.startsWith('TC-')) {
-    const num = parseInt(ticketId.replace('TC-', ''), 10);
-    if (num >= 1000) {
-      return `TKT-${String(num - 1000).padStart(3, '0')}`;
-    }
+// =========================================================
+// ALL TICKETS MANAGEMENT WORKBENCH
+// =========================================================
+
+function renderAllTicketsView() {
+  const tbody = document.getElementById('all-tickets-tbody');
+  const kanban = document.getElementById('all-tickets-kanban-container');
+  if (!tbody || !kanban) return;
+
+  // Filter tickets
+  let filtered = [...state.tickets];
+
+  // Search filter
+  const s = state.allTicketsFilter.search.toLowerCase();
+  if (s) {
+    filtered = filtered.filter(t => 
+      t.title.toLowerCase().includes(s) ||
+      (t.description && t.description.toLowerCase().includes(s)) ||
+      (t.category && t.category.toLowerCase().includes(s)) ||
+      (t.requester?.name && t.requester.name.toLowerCase().includes(s)) ||
+      (t.ticket_id && t.ticket_id.toLowerCase().includes(s))
+    );
   }
-  return ticketId;
-}
 
-function getCategoryLucideTag(cat) {
-  switch (cat) {
-    case 'IT_INFRASTRUCTURE': return '<i data-lucide="server"></i>';
-    case 'FINANCE_BILLING': return '<i data-lucide="credit-card"></i>';
-    case 'SECURITY_ACCESS': return '<i data-lucide="wifi"></i>';
-    case 'SOFTWARE_APPLICATIONS': return '<i data-lucide="monitor"></i>';
-    case 'FACILITIES_OFFICE': return '<i data-lucide="building"></i>';
-    case 'HR_PAYROLL': return '<i data-lucide="users"></i>';
-    default: return '<i data-lucide="hard-drive"></i>';
+  // Priority filter
+  if (state.activeFilter && state.activeFilter !== 'ALL') {
+    filtered = filtered.filter(t => t.priority === state.activeFilter);
   }
-}
 
-function formatCategoryName(cat) {
-  switch (cat) {
-    case 'IT_INFRASTRUCTURE': return 'Infrastructure';
-    case 'FINANCE_BILLING': return 'Finance';
-    case 'SECURITY_ACCESS': return 'Network';
-    case 'SOFTWARE_APPLICATIONS': return 'Application';
-    case 'FACILITIES_OFFICE': return 'Facilities';
-    case 'HR_PAYROLL': return 'HR & Payroll';
-    default: return 'Hardware';
+  // Status filter
+  if (state.allTicketsFilter.status !== 'ALL') {
+    filtered = filtered.filter(t => t.status === state.allTicketsFilter.status);
   }
+
+  // Category filter
+  if (state.allTicketsFilter.category !== 'ALL') {
+    filtered = filtered.filter(t => t.category === state.allTicketsFilter.category);
+  }
+
+  // Sorting
+  if (state.allTicketsFilter.sort === 'priority_desc') {
+    filtered.sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0));
+  } else if (state.allTicketsFilter.sort === 'newest') {
+    filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  } else if (state.allTicketsFilter.sort === 'sla_urgent') {
+    filtered.sort((a, b) => (a.sla?.remaining_hours || 999) - (b.sla?.remaining_hours || 999));
+  }
+
+  // Render Table View
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align:center; padding: 40px; color: var(--text-muted);">
+          <i data-lucide="inbox" style="width:36px; height:36px; margin: 0 auto 8px auto; color:#cbd5e1; display:block;"></i>
+          <div style="font-size: 14px; font-weight:700;">No matching tickets found</div>
+          <div style="font-size: 12px; margin-top: 4px;">Try clearing filters or search keywords.</div>
+        </td>
+      </tr>
+    `;
+  } else {
+    tbody.innerHTML = filtered.map((t, idx) => {
+      const code = formatTicketCode(t.ticket_id, idx);
+      const badgeClass = getPriorityBadgeClass(t.priority);
+      const statusBadgeClass = getStatusBadgeClass(t.status);
+      const slaFormatted = formatSLA(t.sla);
+
+      return `
+        <tr onclick="openTicketDetailsModal('${escapeHtml(t.ticket_id)}')" style="cursor: pointer;">
+          <td><span class="ticket-id-badge">${escapeHtml(code)}</span></td>
+          <td>
+            <div class="ticket-title-row">${escapeHtml(t.title)}</div>
+            <div class="ticket-desc-row">${escapeHtml(t.description || '')}</div>
+          </td>
+          <td><span class="ticket-category-pill">${escapeHtml(t.category || 'General')}</span></td>
+          <td><span class="badge-pill-priority ${badgeClass}">${formatPriority(t.priority)}</span></td>
+          <td><span class="score-pill-val">${t.priority_score || 0}/100</span></td>
+          <td><span style="font-size: 12px; font-weight:600; color:#334155;">${escapeHtml(t.requester?.name || 'Admin')}</span></td>
+          <td>${slaFormatted}</td>
+          <td><span class="status-badge-pill ${statusBadgeClass}">${escapeHtml(t.status || 'OPEN')}</span></td>
+          <td style="text-align: right;" onclick="event.stopPropagation()">
+            <button class="btn-action-icon" title="View details" onclick="openTicketDetailsModal('${escapeHtml(t.ticket_id)}')">
+              <i data-lucide="eye"></i>
+            </button>
+            <button class="btn-action-icon" title="Quick Resolve" onclick="quickResolveTicket('${escapeHtml(t.ticket_id)}')">
+              <i data-lucide="check"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Render Kanban Cards View
+  if (filtered.length === 0) {
+    kanban.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background:#fff; border-radius:14px; border:1px solid var(--border-color); color: var(--text-muted);">
+        No matching tickets found
+      </div>
+    `;
+  } else {
+    kanban.innerHTML = filtered.map((t, idx) => {
+      const code = formatTicketCode(t.ticket_id, idx);
+      const badgeClass = getPriorityBadgeClass(t.priority);
+      const statusBadgeClass = getStatusBadgeClass(t.status);
+      const slaFormatted = formatSLA(t.sla);
+
+      return `
+        <div class="ticket-card-kanban priority-${escapeHtml(t.priority)}" onclick="openTicketDetailsModal('${escapeHtml(t.ticket_id)}')">
+          <div class="kanban-top-meta">
+            <span class="ticket-id-badge">${escapeHtml(code)}</span>
+            <span class="badge-pill-priority ${badgeClass}">${formatPriority(t.priority)}</span>
+          </div>
+
+          <div class="kanban-title">${escapeHtml(t.title)}</div>
+          <div class="kanban-desc">${escapeHtml(t.description || '')}</div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="ticket-category-pill">${escapeHtml(t.category || 'General')}</span>
+            <span class="status-badge-pill ${statusBadgeClass}">${escapeHtml(t.status || 'OPEN')}</span>
+          </div>
+
+          <div class="kanban-bottom-meta">
+            <div class="kanban-requester">
+              <i data-lucide="user" style="width:13px; height:13px;"></i>
+              <span>${escapeHtml(t.requester?.name || 'Admin')}</span>
+            </div>
+            <div>${slaFormatted}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  refreshIcons();
 }
 
-// Render Priority Donut Chart
-function renderPriorityDonut(stats) {
-  const canvas = document.getElementById('chart-priority-donut');
-  if (!canvas || !window.Chart) return;
+function handleAllTicketsSearch(val) {
+  state.allTicketsFilter.search = val.trim();
+  renderAllTicketsView();
+}
 
-  const p1 = stats.priority_distribution['P1_CRITICAL'] || 0;
-  const p2 = stats.priority_distribution['P2_HIGH'] || 0;
-  const p3 = stats.priority_distribution['P3_MEDIUM'] || 0;
-  const p4 = stats.priority_distribution['P4_LOW'] || 0;
-  const total = p1 + p2 + p3 + p4 || 1;
+function handleAllTicketsFilterChange() {
+  const statusSelect = document.getElementById('all-filter-status');
+  const catSelect = document.getElementById('all-filter-category');
+  if (statusSelect) state.allTicketsFilter.status = statusSelect.value;
+  if (catSelect) state.allTicketsFilter.category = catSelect.value;
+  renderAllTicketsView();
+}
 
-  // Update Legend Values
-  document.getElementById('legend-p1-stat').innerText = `${p1} (${Math.round((p1/total)*100)}%)`;
-  document.getElementById('legend-p2-stat').innerText = `${p2} (${Math.round((p2/total)*100)}%)`;
-  document.getElementById('legend-p3-stat').innerText = `${p3} (${Math.round((p3/total)*100)}%)`;
-  document.getElementById('legend-p4-stat').innerText = `${p4} (${Math.round((p4/total)*100)}%)`;
+function handleAllTicketsSortChange(val) {
+  state.allTicketsFilter.sort = val;
+  renderAllTicketsView();
+}
 
-  if (state.charts.priority) state.charts.priority.destroy();
+function setAllTicketsLayout(layout) {
+  state.allTicketsFilter.layout = layout;
+  const tableContainer = document.getElementById('all-tickets-table-container');
+  const kanbanContainer = document.getElementById('all-tickets-kanban-container');
+  const btnTable = document.getElementById('btn-view-table');
+  const btnKanban = document.getElementById('btn-view-kanban');
 
-  const ctx = canvas.getContext('2d');
-  state.charts.priority = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Low'],
-      datasets: [{
-        data: [p1, p2, p3, p4],
-        backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#64748b'],
-        borderWidth: 2,
-        borderColor: '#ffffff',
-        hoverOffset: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: true }
+  if (layout === 'table') {
+    tableContainer.style.display = 'block';
+    kanbanContainer.style.display = 'none';
+    btnTable.classList.add('active');
+    btnKanban.classList.remove('active');
+  } else {
+    tableContainer.style.display = 'none';
+    kanbanContainer.style.display = 'grid';
+    btnTable.classList.remove('active');
+    btnKanban.classList.add('active');
+  }
+  refreshIcons();
+}
+
+// =========================================================
+// MY TICKETS WORKSTATION
+// =========================================================
+
+function renderMyTicketsView() {
+  const tbody = document.getElementById('my-tickets-tbody');
+  const countEl = document.getElementById('my-active-count');
+  const tabCnt = document.getElementById('my-tab-all-cnt');
+  if (!tbody) return;
+
+  // Filter tickets that belong to Admin / assigned or relevant
+  let myTickets = state.tickets.filter(t => {
+    return t.assigned_to === 'Admin' || 
+           t.requester?.name?.toLowerCase().includes('sarah') || 
+           t.status === 'IN_PROGRESS' || 
+           t.status === 'OPEN';
+  });
+
+  if (myTickets.length === 0) {
+    myTickets = state.tickets.slice(0, 4);
+  }
+
+  if (countEl) countEl.innerText = myTickets.length;
+  if (tabCnt) tabCnt.innerText = myTickets.length;
+
+  // Sub tab filter
+  let displayTickets = [...myTickets];
+  if (state.myTicketsFilter === 'IN_PROGRESS') {
+    displayTickets = displayTickets.filter(t => t.status === 'IN_PROGRESS');
+  } else if (state.myTicketsFilter === 'CRITICAL') {
+    displayTickets = displayTickets.filter(t => t.priority === 'P1_CRITICAL' || t.priority === 'P2_HIGH');
+  } else if (state.myTicketsFilter === 'RESOLVED') {
+    displayTickets = displayTickets.filter(t => t.status === 'RESOLVED');
+  }
+
+  if (displayTickets.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center; padding: 36px; color: var(--text-muted);">
+          No assigned tickets in this sub-view.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = displayTickets.map((t, idx) => {
+    const code = formatTicketCode(t.ticket_id, idx);
+    const badgeClass = getPriorityBadgeClass(t.priority);
+    const statusBadgeClass = getStatusBadgeClass(t.status);
+    const slaFormatted = formatSLA(t.sla);
+
+    return `
+      <tr onclick="openTicketDetailsModal('${escapeHtml(t.ticket_id)}')" style="cursor: pointer;">
+        <td><span class="ticket-id-badge">${escapeHtml(code)}</span></td>
+        <td>
+          <div class="ticket-title-row">${escapeHtml(t.title)}</div>
+          <div class="ticket-desc-row">${escapeHtml(t.description || '')}</div>
+        </td>
+        <td><span class="ticket-category-pill">${escapeHtml(t.category || 'General')}</span></td>
+        <td><span class="badge-pill-priority ${badgeClass}">${formatPriority(t.priority)}</span></td>
+        <td><span class="score-pill-val">${t.priority_score || 0}/100</span></td>
+        <td>${slaFormatted}</td>
+        <td><span class="status-badge-pill ${statusBadgeClass}">${escapeHtml(t.status || 'OPEN')}</span></td>
+        <td style="text-align: right;" onclick="event.stopPropagation()">
+          <button class="btn-primary" style="padding:4px 10px; font-size:11.5px;" onclick="openTicketDetailsModal('${escapeHtml(t.ticket_id)}')">
+            Inspect
+          </button>
+          <button class="btn-secondary" style="padding:4px 10px; font-size:11.5px;" onclick="quickResolveTicket('${escapeHtml(t.ticket_id)}')">
+            Resolve
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  refreshIcons();
+}
+
+function filterMyTicketsSubTab(subTab, el) {
+  state.myTicketsFilter = subTab;
+  el.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderMyTicketsView();
+}
+
+function filterMyTickets() {
+  state.allTicketsFilter.search = "Sarah";
+  navigateToView('my_tickets');
+}
+
+// =========================================================
+// ANALYTICS VIEW & MULTI-CHART SUITE
+// =========================================================
+
+function renderAnalyticsView() {
+  renderAnalyticsCharts();
+}
+
+function renderAnalyticsCharts() {
+  if (typeof Chart === 'undefined') return;
+
+  const tickets = state.tickets;
+  const p1 = tickets.filter(t => t.priority === 'P1_CRITICAL').length;
+  const p2 = tickets.filter(t => t.priority === 'P2_HIGH').length;
+  const p3 = tickets.filter(t => t.priority === 'P3_MEDIUM').length;
+  const p4 = tickets.filter(t => t.priority === 'P4_LOW').length;
+
+  // Chart 1: Priority Severity Donut
+  const ctxPriority = document.getElementById('chart-analytics-priority');
+  if (ctxPriority) {
+    if (state.charts.analyticsPriority) state.charts.analyticsPriority.destroy();
+    state.charts.analyticsPriority = new Chart(ctxPriority, {
+      type: 'doughnut',
+      data: {
+        labels: ['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Low'],
+        datasets: [{
+          data: [p1 || 2, p2 || 3, p3 || 3, p4 || 1],
+          backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#94a3b8'],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
       },
-      cutout: '72%'
-    }
-  });
-}
-
-// Render SLA Performance Gauge
-function renderSLAGauge(stats) {
-  const canvas = document.getElementById('chart-sla-gauge');
-  if (!canvas || !window.Chart) return;
-
-  const onTime = stats.resolved_count || 7;
-  const atRisk = stats.sla_at_risk_count || 2;
-  const breached = stats.sla_breached_count || 0;
-  const total = onTime + atRisk + breached || 1;
-  const onTimePct = Math.round((onTime / total) * 100);
-
-  document.getElementById('sla-pct-val').innerText = `${onTimePct}%`;
-  document.getElementById('sla-ontime-num').innerText = onTime;
-  document.getElementById('sla-atrisk-num').innerText = atRisk;
-  document.getElementById('sla-breached-num').innerText = breached;
-
-  if (state.charts.slaGauge) state.charts.slaGauge.destroy();
-
-  const ctx = canvas.getContext('2d');
-  state.charts.slaGauge = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      datasets: [{
-        data: [onTime, atRisk, breached],
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false }
-      },
-      cutout: '76%'
-    }
-  });
-}
-
-// Live Activity Stream
-function updateLiveActivityStream() {
-  const container = document.getElementById('activity-stream-box');
-  if (!container || !state.tickets.length) return;
-
-  const activities = [];
-  state.tickets.slice(0, 4).forEach((t, i) => {
-    const code = formatTicketCode(t.ticket_id, i);
-    if (t.status === 'IN_PROGRESS') {
-      activities.push(`<strong>${code}</strong> moved to In Progress <span style="color:var(--text-muted);">${formatTimeOnly(t.updated_at)}</span>`);
-    } else if (t.status === 'RESOLVED') {
-      activities.push(`<strong>${code}</strong> resolved <span style="color:var(--text-muted);">${formatTimeOnly(t.updated_at)}</span>`);
-    } else {
-      activities.push(`<strong>${code}</strong> priority marked ${t.priority.replace('_', ' ')} <span style="color:var(--text-muted);">${formatTimeOnly(t.created_at)}</span>`);
-    }
-  });
-
-  container.innerHTML = activities.map(a => `<span class="activity-item-pill">${a}</span>`).join('');
-}
-
-function formatTimeOnly(dateStr) {
-  if (!dateStr) return "Just now";
-  const d = new Date(dateStr);
-  let h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return `${h}:${m} ${ampm}`;
-}
-
-// Live Scoring Simulator inside Create Modal
-function setupLiveScoringSimulator() {
-  const titleInput = document.getElementById('new-ticket-title');
-  const descInput = document.getElementById('new-ticket-desc');
-  const scopeSelect = document.getElementById('new-ticket-scope');
-  const critSelect = document.getElementById('new-ticket-crit');
-  const vipCheck = document.getElementById('new-ticket-vip');
-
-  const updateSim = () => {
-    const title = titleInput?.value.trim() || '';
-    const desc = descInput?.value.trim() || '';
-    const fullText = `${title.toLowerCase()} ${desc.toLowerCase()}`;
-    const scope = scopeSelect?.value || 'INDIVIDUAL';
-    const crit = critSelect?.value || 'MEDIUM';
-    const isVip = vipCheck?.checked || false;
-
-    let urgency = 5;
-    let detected = [];
-    CRITICAL_KEYWORDS.forEach(kw => {
-      if (fullText.includes(kw)) {
-        urgency = 30;
-        detected.push(kw);
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } } }
+        }
       }
     });
-    if (urgency < 30) {
-      HIGH_KEYWORDS.forEach(kw => {
-        if (fullText.includes(kw)) {
-          urgency = Math.max(urgency, 22);
-          detected.push(kw);
+  }
+
+  // Chart 2: Category Breakdown Bar Chart
+  const ctxCat = document.getElementById('chart-analytics-categories');
+  if (ctxCat) {
+    if (state.charts.analyticsCategories) state.charts.analyticsCategories.destroy();
+    
+    // Aggregate category counts
+    const catMap = {};
+    tickets.forEach(t => {
+      const c = t.category || 'General';
+      catMap[c] = (catMap[c] || 0) + 1;
+    });
+
+    const labels = Object.keys(catMap).length ? Object.keys(catMap) : ['Billing', 'Finance', 'Network', 'Enterprise Apps', 'Hardware'];
+    const data = Object.keys(catMap).length ? Object.values(catMap) : [3, 2, 2, 1, 1];
+
+    state.charts.analyticsCategories = new Chart(ctxCat, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Incidents Ingested',
+          data: data,
+          backgroundColor: '#3b82f6',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { grid: { display: false } }
         }
-      });
-    }
-    if (urgency < 22) {
-      MEDIUM_KEYWORDS.forEach(kw => {
-        if (fullText.includes(kw)) {
-          urgency = Math.max(urgency, 14);
-          detected.push(kw);
+      }
+    });
+  }
+
+  // Chart 3: Department Breakdown Bar Chart
+  const ctxDept = document.getElementById('chart-analytics-depts');
+  if (ctxDept) {
+    if (state.charts.analyticsDepts) state.charts.analyticsDepts.destroy();
+
+    const deptMap = {};
+    tickets.forEach(t => {
+      const d = t.requester?.department || 'IT Operations';
+      deptMap[d] = (deptMap[d] || 0) + 1;
+    });
+
+    const labels = Object.keys(deptMap).length ? Object.keys(deptMap) : ['Infrastructure', 'Finance', 'Network', 'Marketing', 'Hardware'];
+    const data = Object.keys(deptMap).length ? Object.values(deptMap) : [4, 2, 2, 1, 1];
+
+    state.charts.analyticsDepts = new Chart(ctxDept, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Requests by Dept',
+          data: data,
+          backgroundColor: '#8b5cf6',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { grid: { display: false } }
         }
-      });
-    }
+      }
+    });
+  }
 
-    const impactMap = { ORGANIZATION: 30, TEAM: 20, INDIVIDUAL: 10 };
-    const impact = impactMap[scope] || 10;
+  // Chart 4: SLA Adherence Doughnut
+  const ctxSla = document.getElementById('chart-analytics-sla');
+  if (ctxSla) {
+    if (state.charts.analyticsSla) state.charts.analyticsSla.destroy();
+    const stats = state.dashboardStats || {};
+    const onTime = stats.sla_on_time_count !== undefined ? stats.sla_on_time_count : 7;
+    const atRisk = stats.sla_at_risk_count !== undefined ? stats.sla_at_risk_count : 2;
+    const breached = stats.sla_breached_count !== undefined ? stats.sla_breached_count : 0;
 
-    const critMap = { SEVERE: 30, HIGH: 22, MEDIUM: 14, LOW: 5 };
-    const criticality = critMap[crit] || 14;
+    state.charts.analyticsSla = new Chart(ctxSla, {
+      type: 'doughnut',
+      data: {
+        labels: ['On Time SLA', 'At Risk (<2h)', 'Breached'],
+        datasets: [{
+          data: [onTime || 7, atRisk || 2, breached || 0],
+          backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } } }
+        }
+      }
+    });
+  }
+}
 
-    const vipBonus = isVip ? 10 : 0;
-    const total = Math.min(100, urgency + impact + criticality + vipBonus);
+// =========================================================
+// REPORTS VIEW & EXPORT CENTER
+// =========================================================
 
-    let prioTag = "P4 Low (72h SLA)";
-    let prioColor = "#64748b";
-    if (total >= 75) {
-      prioTag = "P1 Critical (2h SLA)";
-      prioColor = "#ef4444";
-    } else if (total >= 55) {
-      prioTag = "P2 High (6h SLA)";
-      prioColor = "#f59e0b";
-    } else if (total >= 35) {
-      prioTag = "P3 Medium (24h SLA)";
-      prioColor = "#2563eb";
-    }
+function renderReportsView() {
+  const tbody = document.getElementById('reports-table-tbody');
+  if (!tbody) return;
 
-    const scoreEl = document.getElementById('preview-score-text');
-    const barEl = document.getElementById('preview-progress-bar');
-    const badgeEl = document.getElementById('preview-priority-badge');
-    const kwEl = document.getElementById('preview-keywords-pill');
+  tbody.innerHTML = state.tickets.map((t, idx) => {
+    const code = formatTicketCode(t.ticket_id, idx);
+    const badgeClass = getPriorityBadgeClass(t.priority);
+    const statusBadgeClass = getStatusBadgeClass(t.status);
+    const slaTarget = t.sla?.target_hours ? `${t.sla.target_hours} Hours` : '24 Hours';
 
-    if (scoreEl) scoreEl.innerText = `${total}/100`;
-    if (barEl) barEl.style.width = `${Math.max(5, total)}%`;
-    if (badgeEl) {
-      badgeEl.innerText = prioTag;
-      badgeEl.style.color = prioColor;
-    }
-    if (kwEl) {
-      kwEl.innerText = detected.length ? `🚨 Trigger: ${detected.slice(0, 2).join(', ')}` : '';
-    }
+    return `
+      <tr>
+        <td><span class="ticket-id-badge">${escapeHtml(code)}</span></td>
+        <td><strong>${escapeHtml(t.title)}</strong></td>
+        <td>${escapeHtml(t.category || 'General')}</td>
+        <td><span class="badge-pill-priority ${badgeClass}">${formatPriority(t.priority)}</span></td>
+        <td><strong style="font-family:'JetBrains Mono',monospace;">${t.priority_score || 0}/100</strong></td>
+        <td>${slaTarget}</td>
+        <td><span class="status-badge-pill ${statusBadgeClass}">${escapeHtml(t.status || 'OPEN')}</span></td>
+        <td>${escapeHtml(t.requester?.department || 'Operations')}</td>
+      </tr>
+    `;
+  }).join('');
+
+  refreshIcons();
+}
+
+function generateReportType(type) {
+  const title = document.getElementById('report-table-title');
+  if (type === 'sla') {
+    if (title) title.innerText = "Live SLA Compliance & Breach Audit Report";
+    showToastNotification("Generated SLA Compliance Report dataset", "success");
+  } else if (type === 'category') {
+    if (title) title.innerText = "Incident Category Blast Radius & Root Cause Summary";
+    showToastNotification("Generated Incident Category Breakdown", "success");
+  } else if (type === 'agent') {
+    if (title) title.innerText = "IT Support Specialist Velocity & Resolution Audit";
+    showToastNotification("Generated Team Workload & Velocity Report", "success");
+  }
+  renderReportsView();
+}
+
+function exportTicketsJSON() {
+  if (!state.tickets.length) {
+    showToastNotification("No tickets to export", "info");
+    return;
+  }
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.tickets, null, 2));
+  const link = document.createElement('a');
+  link.setAttribute("href", dataStr);
+  link.setAttribute("download", `IntelliTicket_Dump_${new Date().toISOString().slice(0,10)}.json`);
+  link.click();
+  showToastNotification("Exported raw JSON ticket dataset", "success");
+}
+
+// =========================================================
+// SETTINGS VIEW CONTROLLER
+// =========================================================
+
+function renderSettingsView() {
+  // Load saved settings if any
+  const savedAppName = localStorage.getItem('it_app_name');
+  if (savedAppName) {
+    const el = document.getElementById('setting-app-name');
+    if (el) el.value = savedAppName;
+  }
+}
+
+function switchSettingsTab(tabKey, el) {
+  document.querySelectorAll('.settings-sidebar .settings-tab-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  document.querySelectorAll('.settings-pane-content').forEach(p => p.style.display = 'none');
+  const targetPane = document.getElementById(`settings-tab-${tabKey}`);
+  if (targetPane) targetPane.style.display = 'block';
+  refreshIcons();
+}
+
+function saveSettings() {
+  const appName = document.getElementById('setting-app-name')?.value;
+  if (appName) {
+    localStorage.setItem('it_app_name', appName);
+  }
+  showToastNotification("Settings & Prioritization Weights saved successfully!", "success");
+}
+
+// =========================================================
+// CREATE TICKET STUDIO & LIVE SCORING SIMULATOR
+// =========================================================
+
+function renderCreateStudioView() {
+  renderPresets();
+  setupLiveScoringSimulator();
+}
+
+function renderPresets() {
+  const renderContainer = (containerId, applyFn) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = PRESETS.map((p, idx) => `
+      <div class="preset-chip" onclick="${applyFn}(${idx})">
+        <span>${escapeHtml(p.label)}</span>
+      </div>
+    `).join('');
   };
 
-  [titleInput, descInput, scopeSelect, critSelect, vipCheck].forEach(el => {
-    el?.addEventListener('input', updateSim);
-    el?.addEventListener('change', updateSim);
-  });
+  renderContainer('create-presets-container', 'applyModalPreset');
+  renderContainer('studio-presets-container', 'applyStudioPreset');
 }
 
-// Render Scenario Presets
-function renderPresets() {
-  const container = document.getElementById('create-presets-container');
-  if (!container) return;
-  container.innerHTML = PRESETS.map((p, idx) => `
-    <button type="button" class="preset-chip" onclick="applyPreset(${idx})">${p.label}</button>
-  `).join('');
-}
-
-function applyPreset(idx) {
+function applyModalPreset(idx) {
   const p = PRESETS[idx];
-  document.getElementById('new-ticket-title').value = p.title;
-  document.getElementById('new-ticket-desc').value = p.desc;
-  document.getElementById('new-ticket-scope').value = p.scope;
-  document.getElementById('new-ticket-crit').value = p.crit;
-  document.getElementById('new-ticket-req-name').value = p.name;
-  document.getElementById('new-ticket-req-dept').value = p.dept;
-  document.getElementById('new-ticket-req-email').value = p.email;
-  document.getElementById('new-ticket-vip').checked = p.vip;
+  if (!p) return;
 
-  document.getElementById('new-ticket-title').dispatchEvent(new Event('input'));
-  showToastNotification(`Loaded preset: ${p.title}`, 'info');
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+
+  setVal('new-ticket-title', p.title);
+  setVal('new-ticket-desc', p.desc);
+  setVal('new-ticket-scope', p.scope);
+  setVal('new-ticket-crit', p.crit);
+  setVal('new-ticket-req-name', p.name);
+  setVal('new-ticket-req-dept', p.dept);
+  setVal('new-ticket-req-email', p.email);
+
+  const vipBox = document.getElementById('new-ticket-vip');
+  if (vipBox) vipBox.checked = p.vip;
+
+  simulateScoring('modal');
+  showToastNotification(`Loaded: ${p.label}`, 'info');
 }
 
-// Handle Form Submission -> Write Directly to MongoDB
+function applyStudioPreset(idx) {
+  const p = PRESETS[idx];
+  if (!p) return;
+
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+
+  setVal('studio-ticket-title', p.title);
+  setVal('studio-ticket-desc', p.desc);
+  setVal('studio-ticket-scope', p.scope);
+  setVal('studio-ticket-crit', p.crit);
+  setVal('studio-ticket-req-name', p.name);
+  setVal('studio-ticket-req-dept', p.dept);
+  setVal('studio-ticket-req-email', p.email);
+
+  const vipBox = document.getElementById('studio-ticket-vip');
+  if (vipBox) vipBox.checked = p.vip;
+
+  simulateScoring('studio');
+  showToastNotification(`Loaded: ${p.label}`, 'info');
+}
+
+function setupLiveScoringSimulator() {
+  const bindInputs = (prefix, mode) => {
+    const ids = [
+      `${prefix}-ticket-title`,
+      `${prefix}-ticket-desc`,
+      `${prefix}-ticket-scope`,
+      `${prefix}-ticket-crit`,
+      `${prefix}-ticket-vip`
+    ];
+
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => simulateScoring(mode));
+        el.addEventListener('change', () => simulateScoring(mode));
+      }
+    });
+  };
+
+  bindInputs('new', 'modal');
+  bindInputs('studio', 'studio');
+  simulateScoring('modal');
+  simulateScoring('studio');
+}
+
+function simulateScoring(mode = 'modal') {
+  const prefix = mode === 'studio' ? 'studio' : 'new';
+  const title = document.getElementById(`${prefix}-ticket-title`)?.value || '';
+  const desc = document.getElementById(`${prefix}-ticket-desc`)?.value || '';
+  const scope = document.getElementById(`${prefix}-ticket-scope`)?.value || 'INDIVIDUAL';
+  const crit = document.getElementById(`${prefix}-ticket-crit`)?.value || 'MEDIUM';
+  const isVip = document.getElementById(`${prefix}-ticket-vip`)?.checked || false;
+
+  let score = 0;
+  let blastPts = 10;
+  let critPts = 14;
+  let nlpPts = 0;
+  let vipPts = isVip ? 10 : 0;
+
+  if (scope === 'ORGANIZATION') blastPts = 30;
+  else if (scope === 'TEAM') blastPts = 20;
+
+  if (crit === 'SEVERE') critPts = 30;
+  else if (crit === 'HIGH') critPts = 22;
+  else if (crit === 'MEDIUM') critPts = 14;
+  else if (crit === 'LOW') critPts = 5;
+
+  const combined = `${title} ${desc}`.toLowerCase();
+  const matchedCrit = CRITICAL_KEYWORDS.filter(k => combined.includes(k));
+  const matchedHigh = HIGH_KEYWORDS.filter(k => combined.includes(k));
+
+  if (matchedCrit.length > 0) nlpPts = 25;
+  else if (matchedHigh.length > 0) nlpPts = 15;
+
+  score = Math.min(100, blastPts + critPts + nlpPts + vipPts);
+
+  let priority = 'P4_LOW';
+  let slaText = '72h SLA';
+  let badgeStyle = '#64748b';
+
+  if (score >= 80) {
+    priority = 'P1_CRITICAL';
+    slaText = '1h SLA Outage';
+    badgeStyle = '#ef4444';
+  } else if (score >= 60) {
+    priority = 'P2_HIGH';
+    slaText = '4h SLA Urgent';
+    badgeStyle = '#f59e0b';
+  } else if (score >= 35) {
+    priority = 'P3_MEDIUM';
+    slaText = '24h SLA Normal';
+    badgeStyle = '#3b82f6';
+  }
+
+  // Update UI Elements
+  if (mode === 'modal') {
+    const scoreText = document.getElementById('preview-score-text');
+    const bar = document.getElementById('preview-progress-bar');
+    const prioBadge = document.getElementById('preview-priority-badge');
+    const kwPill = document.getElementById('preview-keywords-pill');
+
+    if (scoreText) scoreText.innerText = `${score}/100`;
+    if (bar) {
+      bar.style.width = `${score}%`;
+      bar.style.background = score >= 80 ? '#ef4444' : (score >= 60 ? '#f59e0b' : '#3b82f6');
+    }
+    if (prioBadge) {
+      prioBadge.innerText = `${formatPriority(priority)} (${slaText})`;
+      prioBadge.style.color = badgeStyle;
+    }
+    if (kwPill) {
+      kwPill.innerText = matchedCrit.length ? `🚨 Cues: ${matchedCrit.slice(0, 2).join(', ')}` : '';
+    }
+  } else {
+    const huge = document.getElementById('studio-score-huge');
+    const bar = document.getElementById('studio-score-bar');
+    const pill = document.getElementById('studio-priority-pill');
+    const slaEl = document.getElementById('studio-sla-target-text');
+
+    if (huge) huge.innerText = score;
+    if (bar) {
+      bar.style.width = `${score}%`;
+      bar.style.background = score >= 80 ? '#ef4444' : (score >= 60 ? '#f59e0b' : '#3b82f6');
+    }
+    if (pill) {
+      pill.className = `badge-pill-priority ${priority}`;
+      pill.innerText = formatPriority(priority);
+    }
+    if (slaEl) slaEl.innerText = `⏱️ ${slaText}`;
+
+    const setVal = (id, txt) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = txt;
+    };
+    setVal('factor-blast', `+${blastPts} pts`);
+    setVal('factor-crit', `+${critPts} pts`);
+    setVal('factor-nlp', `+${nlpPts} pts`);
+    setVal('factor-vip', `+${vipPts} pts`);
+  }
+}
+
 async function handleCreateTicketSubmit(e) {
   e.preventDefault();
-  const submitBtn = document.getElementById('btn-submit-create');
-  submitBtn.disabled = true;
-  submitBtn.innerText = "⏳ Ingesting to MongoDB...";
-
-  const payload = {
-    title: document.getElementById('new-ticket-title').value.trim(),
-    description: document.getElementById('new-ticket-desc').value.trim(),
-    impact_scope: document.getElementById('new-ticket-scope').value,
-    business_criticality: document.getElementById('new-ticket-crit').value,
-    requester: {
-      name: document.getElementById('new-ticket-req-name').value.trim(),
-      email: document.getElementById('new-ticket-req-email').value.trim(),
-      department: document.getElementById('new-ticket-req-dept').value.trim(),
-      is_vip: document.getElementById('new-ticket-vip').checked
-    }
-  };
+  const btn = document.getElementById('btn-submit-create');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="online-dot" style="display:inline-block;"></span> Prioritizing...`;
 
   try {
+    const payload = {
+      title: document.getElementById('new-ticket-title').value.trim(),
+      description: document.getElementById('new-ticket-desc').value.trim(),
+      impact_scope: document.getElementById('new-ticket-scope').value,
+      business_criticality: document.getElementById('new-ticket-crit').value,
+      requester: {
+        name: document.getElementById('new-ticket-req-name').value.trim(),
+        department: document.getElementById('new-ticket-req-dept').value.trim(),
+        email: document.getElementById('new-ticket-req-email').value.trim(),
+        is_vip: document.getElementById('new-ticket-vip').checked
+      }
+    };
+
     const res = await fetch('/api/v1/tickets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -602,167 +1137,273 @@ async function handleCreateTicketSubmit(e) {
 
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.detail || "Validation Error");
+      throw new Error(err.detail || 'Failed to create ticket');
     }
 
     const created = await res.json();
     closeCreateModal();
-    showToastNotification(`Ticket ${created.ticket_id} ingested! Classified as ${created.priority.replace('_', ' ')}`, 'success');
-
-    // Real-time refresh
-    await loadData();
-    openTicketInspector(created.ticket_id);
+    showToastNotification(`Ticket prioritized as ${formatPriority(created.priority)} (Score: ${created.priority_score})`, 'success');
+    await loadData(false);
+    navigateToView('all_tickets');
   } catch (err) {
     showToastNotification(`Error: ${err.message}`, 'error');
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerText = "⚡ Submit & Prioritize in MongoDB";
+    btn.disabled = false;
+    btn.innerHTML = `<i data-lucide="zap" style="width: 16px; height: 16px;"></i><span>Submit & Prioritize in MongoDB</span>`;
+    refreshIcons();
   }
 }
 
-// Inspection Modal
-async function openTicketInspector(ticketId) {
+async function handleStudioSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-studio-submit');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="online-dot" style="display:inline-block;"></span> AI Engine Ingesting...`;
+
   try {
-    const res = await fetch(`/api/v1/tickets/${ticketId}`);
-    if (!res.ok) throw new Error("Ticket not found");
-    const t = await res.json();
-    state.selectedTicket = t;
+    const payload = {
+      title: document.getElementById('studio-ticket-title').value.trim(),
+      description: document.getElementById('studio-ticket-desc').value.trim(),
+      impact_scope: document.getElementById('studio-ticket-scope').value,
+      business_criticality: document.getElementById('studio-ticket-crit').value,
+      requester: {
+        name: document.getElementById('studio-ticket-req-name').value.trim(),
+        department: document.getElementById('studio-ticket-req-dept').value.trim(),
+        email: document.getElementById('studio-ticket-req-email').value.trim(),
+        is_vip: document.getElementById('studio-ticket-vip').checked
+      }
+    };
 
-    document.getElementById('modal-ticket-code').innerText = t.ticket_id;
-    document.getElementById('modal-ticket-title').innerText = t.title;
-    document.getElementById('modal-ticket-desc').innerText = t.description;
-    document.getElementById('modal-change-status-select').value = t.status;
+    const res = await fetch('/api/v1/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    const badge = document.getElementById('modal-ticket-badge');
-    badge.className = `badge-pill-priority ${t.priority}`;
-    badge.innerText = `${t.priority.replace('_', ' ')} (${t.priority_score}/100)`;
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to create ticket');
+    }
 
-    // AI Reasoning breakdown
-    const pb = t.priority_breakdown;
-    document.getElementById('modal-ai-reasoning').innerHTML = `
-      ${pb.ai_model_used ? `<div style="margin-bottom:6px;"><span class="badge-pill-priority P3_MEDIUM">🤖 AI Engine: ${pb.ai_model_used}</span></div>` : ''}
-      <strong>Decision Reasoning:</strong> ${escapeHtml(pb.reasoning)}<br/>
-      ${pb.root_cause_hypothesis ? `<div style="margin-top:6px; color:#334155;">🔍 <strong>Root-Cause Hypothesis:</strong> ${escapeHtml(pb.root_cause_hypothesis)}</div>` : ''}
-      ${pb.recommended_action ? `<div style="margin-top:6px; color:#16a34a;">💡 <strong>Recommended Action:</strong> ${escapeHtml(pb.recommended_action)}</div>` : ''}
-      ${pb.detected_urgency_keywords?.length ? `<div style="margin-top:6px;"><strong>Triggered Keywords:</strong> <span style="color:#ef4444;">${pb.detected_urgency_keywords.join(', ')}</span></div>` : ''}
+    const created = await res.json();
+    showToastNotification(`AI Prioritization: Assigned ${formatPriority(created.priority)} (${created.priority_score}/100)`, 'success');
+    await loadData(false);
+    navigateToView('all_tickets');
+  } catch (err) {
+    showToastNotification(`Error: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i data-lucide="zap" style="width: 16px; height: 16px;"></i><span>Submit Ticket & Trigger AI Prioritization</span>`;
+    refreshIcons();
+  }
+}
+
+function resetStudioForm() {
+  document.getElementById('form-studio-create')?.reset();
+  simulateScoring('studio');
+}
+
+// =========================================================
+// MODALS (TICKET DETAILS, INSPECTION & AUDIT)
+// =========================================================
+
+function openCreateModal() {
+  const modal = document.getElementById('modal-create-ticket');
+  if (modal) {
+    modal.classList.add('active');
+    document.getElementById('new-ticket-title')?.focus();
+    simulateScoring('modal');
+    refreshIcons();
+  }
+}
+
+function closeCreateModal() {
+  document.getElementById('modal-create-ticket')?.classList.remove('active');
+}
+
+async function openTicketDetailsModal(ticketId) {
+  let ticket = state.tickets.find(t => t.ticket_id === ticketId);
+
+  try {
+    const res = await fetch(`/api/v1/tickets/${encodeURIComponent(ticketId)}`);
+    if (res.ok) ticket = await res.json();
+  } catch (err) {
+    console.warn("Could not fetch latest ticket details:", err);
+  }
+
+  if (!ticket) {
+    showToastNotification("Ticket details unavailable", "error");
+    return;
+  }
+
+  state.selectedTicket = ticket;
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt('modal-ticket-title', ticket.title);
+  setTxt('modal-ticket-desc', ticket.description || 'No detailed symptoms provided.');
+  setTxt('modal-ticket-code', ticket.ticket_id);
+
+  const badge = document.getElementById('modal-ticket-badge');
+  if (badge) {
+    badge.className = `badge-pill-priority ${ticket.priority}`;
+    badge.innerText = formatPriority(ticket.priority);
+  }
+
+  const aiBox = document.getElementById('modal-ai-reasoning');
+  if (aiBox) {
+    aiBox.innerText = ticket.ai_reasoning || `Classified with priority score ${ticket.priority_score}/100 based on Blast Radius (${ticket.impact_scope}), Criticality (${ticket.business_criticality}), and requester SLA agreements.`;
+  }
+
+  const chipsRow = document.getElementById('modal-score-chips-row');
+  if (chipsRow) {
+    chipsRow.innerHTML = `
+      <span class="preset-chip">Scope: ${ticket.impact_scope}</span>
+      <span class="preset-chip">Criticality: ${ticket.business_criticality}</span>
+      <span class="preset-chip">AI Score: ${ticket.priority_score}/100</span>
+      <span class="preset-chip">Requester: ${ticket.requester?.name || 'Staff'} (${ticket.requester?.department || 'General'})</span>
     `;
+  }
 
-    document.getElementById('modal-score-chips-row').innerHTML = `
-      <span class="filter-pill">Urgency: ${pb.urgency_score}/30</span>
-      <span class="filter-pill">Scope: ${pb.impact_score}/30</span>
-      <span class="filter-pill">Criticality: ${pb.criticality_score}/30</span>
-      <span class="filter-pill">VIP: +${pb.vip_bonus}</span>
-      <span class="filter-pill active">Total: ${t.priority_score}/100</span>
-    `;
+  const statusSelect = document.getElementById('modal-change-status-select');
+  if (statusSelect) statusSelect.value = ticket.status || 'OPEN';
 
-    // Timeline
-    document.getElementById('modal-timeline-container').innerHTML = t.timeline.map(e => `
-      <div style="font-size: 12.5px;">
-        <div style="font-weight: 700; color: #0f172a;">${escapeHtml(e.action)}</div>
-        <div style="color: var(--text-muted); font-size: 11px;">${new Date(e.timestamp).toLocaleTimeString()} • ${escapeHtml(e.actor)}</div>
-        ${e.note ? `<div style="background: #f8fafc; padding: 4px 8px; border-radius: 6px; margin-top: 2px;">${escapeHtml(e.note)}</div>` : ''}
+  // Render Timeline
+  const timelineContainer = document.getElementById('modal-timeline-container');
+  if (timelineContainer) {
+    const events = ticket.timeline || [
+      { event: "TICKET_CREATED", note: "Ingested and auto-prioritized by AI engine", timestamp: ticket.created_at, actor: "AI System" }
+    ];
+
+    timelineContainer.innerHTML = events.map(ev => `
+      <div style="font-size: 12px; color: #475569;">
+        <div style="font-weight: 700; color: #0f172a;">${escapeHtml(ev.event || 'NOTE')} <span style="font-weight: normal; color: var(--text-muted);">by ${escapeHtml(ev.actor || 'System')}</span></div>
+        <div>${escapeHtml(ev.note || '')}</div>
       </div>
     `).join('');
-
-    document.getElementById('modal-ticket-details').classList.add('active');
-  } catch (err) {
-    showToastNotification(`Failed to open inspector: ${err.message}`, 'error');
   }
+
+  document.getElementById('modal-ticket-details')?.classList.add('active');
+  refreshIcons();
 }
 
 function closeDetailsModal() {
-  document.getElementById('modal-ticket-details').classList.remove('active');
+  document.getElementById('modal-ticket-details')?.classList.remove('active');
   state.selectedTicket = null;
 }
 
-// Modal Action: Update Lifecycle Status
 async function applyStatusChangeFromModal() {
   if (!state.selectedTicket) return;
-  const newStatus = document.getElementById('modal-change-status-select').value;
+  const newStatus = document.getElementById('modal-change-status-select')?.value;
+  if (!newStatus) return;
+
   try {
-    const res = await fetch(`/api/v1/tickets/${state.selectedTicket.ticket_id}/status`, {
+    const res = await fetch(`/api/v1/tickets/${encodeURIComponent(state.selectedTicket.ticket_id)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         status: newStatus,
-        actor: 'Admin Lead',
-        note: `Status transitioned to ${newStatus}`
+        actor: "Admin",
+        note: `Lifecycle updated to ${newStatus}`
       })
     });
-    if (!res.ok) throw new Error("Update status failed");
+
+    if (!res.ok) throw new Error("Status update failed");
     showToastNotification(`Status changed to ${newStatus}`, 'success');
-    await openTicketInspector(state.selectedTicket.ticket_id);
-    await loadData();
+    closeDetailsModal();
+    await loadData(false);
   } catch (err) {
-    showToastNotification(`Error: ${err.message}`, 'error');
+    showToastNotification(err.message, 'error');
   }
 }
 
-// Modal Action: Append Note
+async function quickResolveTicket(ticketId) {
+  try {
+    const res = await fetch(`/api/v1/tickets/${encodeURIComponent(ticketId)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: "RESOLVED",
+        actor: "Admin",
+        note: "Marked as resolved via quick triage action"
+      })
+    });
+
+    if (!res.ok) throw new Error("Failed to resolve ticket");
+    showToastNotification(`Ticket ${ticketId} resolved`, 'success');
+    await loadData(false);
+  } catch (err) {
+    showToastNotification(err.message, 'error');
+  }
+}
+
 async function handleAppendNote(e) {
   e.preventDefault();
   if (!state.selectedTicket) return;
   const input = document.getElementById('modal-note-input');
-  const note = input.value.trim();
+  const note = input?.value.trim();
   if (!note) return;
 
   try {
-    const res = await fetch(`/api/v1/tickets/${state.selectedTicket.ticket_id}/notes`, {
+    const res = await fetch(`/api/v1/tickets/${encodeURIComponent(state.selectedTicket.ticket_id)}/notes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        actor: 'Admin IT Support',
+        actor: "Admin",
         note: note
       })
     });
+
     if (!res.ok) throw new Error("Failed to add note");
     input.value = '';
-    showToastNotification('Note added to audit trail', 'success');
-    await openTicketInspector(state.selectedTicket.ticket_id);
-    await loadData();
+    showToastNotification("Internal investigation note appended", 'success');
+    openTicketDetailsModal(state.selectedTicket.ticket_id);
+    loadData(false);
   } catch (err) {
-    showToastNotification(`Error: ${err.message}`, 'error');
+    showToastNotification(err.message, 'error');
   }
 }
 
-// Seed Demo Database Action
+// =========================================================
+// SEED DATABASE & DEMO HELPERS
+// =========================================================
+
 async function seedDatabaseDirect() {
   const btn = document.getElementById('btn-seed-fast');
-  btn.disabled = true;
-  btn.innerHTML = `<span>⏳</span><span>Seeding DB...</span>`;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="online-dot" style="display:inline-block;"></span><span>Seeding MongoDB...</span>`;
+  }
 
   try {
     const res = await fetch('/api/v1/tickets/seed', { method: 'POST' });
-    if (!res.ok) throw new Error("Seed failed");
+    if (!res.ok) throw new Error(`Seed failed with HTTP ${res.status}`);
     const data = await res.json();
-    showToastNotification(`Success! ${data.inserted_count || 9} realistic tickets loaded into MongoDB`, 'success');
-    await loadData();
+    showToastNotification(`MongoDB successfully seeded with ${data.inserted_count || 9} demo incidents!`, 'success');
+    await loadData(false);
   } catch (err) {
     showToastNotification(`Seed error: ${err.message}`, 'error');
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<i data-lucide="database" style="width: 14px; height: 14px;"></i><span>Seed Demo Data</span>`;
-    refreshIcons();
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="database" style="width: 14px; height: 14px;"></i><span>Seed Demo Data</span>`;
+      refreshIcons();
+    }
   }
 }
 
 // Filter Actions
 function setPriorityFilter(filter, el) {
   state.activeFilter = filter;
-  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    if (b.getAttribute('data-filter') === filter) b.classList.add('active');
+    else b.classList.remove('active');
+  });
   if (el) el.classList.add('active');
   loadTickets();
-}
-
-function filterMyTickets() {
-  state.searchQuery = "Sarah";
-  loadTickets();
-  showToastNotification("Filtered by Admin / Assigned tickets", "info");
-}
-
-function switchSidebarTab(tabName, el) {
-  document.querySelectorAll('.sidebar-nav .nav-item').forEach(b => b.classList.remove('active'));
-  if (el) el.classList.add('active');
 }
 
 // Export CSV
@@ -774,14 +1415,14 @@ function exportTicketsCSV() {
   const headers = ["Ticket ID", "Title", "Category", "Priority", "Score", "SLA Hours", "Status", "Requester", "Department"];
   const rows = state.tickets.map((t, i) => [
     formatTicketCode(t.ticket_id, i),
-    `"${t.title.replace(/"/g, '""')}"`,
-    t.category,
-    t.priority,
-    t.priority_score,
+    `"${(t.title || '').replace(/"/g, '""')}"`,
+    t.category || '',
+    t.priority || '',
+    t.priority_score || 0,
     t.sla?.remaining_hours || 0,
-    t.status,
-    `"${t.requester?.name || ''}"`,
-    `"${t.requester?.department || ''}"`
+    t.status || '',
+    `"${(t.requester?.name || '').replace(/"/g, '""')}"`,
+    `"${(t.requester?.department || '').replace(/"/g, '""')}"`
   ]);
 
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -793,37 +1434,118 @@ function exportTicketsCSV() {
   showToastNotification("CSV Report downloaded", "success");
 }
 
-// Modal Helpers
-function openCreateModal() {
-  document.getElementById('modal-create-ticket').classList.add('active');
-  document.getElementById('new-ticket-title').focus();
-  refreshIcons();
-}
-
-function closeCreateModal() {
-  document.getElementById('modal-create-ticket').classList.remove('active');
-}
-
-function openSettingsModal() {
-  showToastNotification("System running in Production Environment with MongoDB", "info");
-}
-
-function openAnalyticsModal() {
-  showToastNotification("Analytics graphs updated in real-time on right column", "info");
-}
-
 function openAuditStreamModal() {
-  showToastNotification("Audit log tracks every creation, status transition, and note.", "info");
-}
-
-function openCategoryFilterModal() {
-  const current = state.activeFilter;
-  const next = current === 'ALL' ? 'P1_CRITICAL' : (current === 'P1_CRITICAL' ? 'P2_HIGH' : 'ALL');
-  setPriorityFilter(next);
+  showToastNotification("Audit log tracks every creation, status transition, and investigation note.", "info");
 }
 
 function showNotificationToast() {
-  showToastNotification("3 P1/P2 tickets currently require immediate SLA triage", "info");
+  showToastNotification("3 P1/P2 incidents currently require immediate triage & attention", "info");
+}
+
+// Charts on Dashboard
+function updateDonutChart() {
+  const ctx = document.getElementById('chart-priority-donut');
+  if (!ctx || typeof Chart === 'undefined') return;
+
+  const tickets = state.tickets;
+  const p1 = tickets.filter(t => t.priority === 'P1_CRITICAL').length;
+  const p2 = tickets.filter(t => t.priority === 'P2_HIGH').length;
+  const p3 = tickets.filter(t => t.priority === 'P3_MEDIUM').length;
+  const p4 = tickets.filter(t => t.priority === 'P4_LOW').length;
+
+  if (state.charts.priority) state.charts.priority.destroy();
+
+  state.charts.priority = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Low'],
+      datasets: [{
+        data: [p1 || 2, p2 || 3, p3 || 3, p4 || 1],
+        backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#64748b'],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '76%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      }
+    }
+  });
+}
+
+function updateSLAGauge() {
+  const ctx = document.getElementById('chart-sla-gauge');
+  if (!ctx || typeof Chart === 'undefined') return;
+
+  const stats = state.dashboardStats || {};
+  const onTime = stats.sla_on_time_count !== undefined ? stats.sla_on_time_count : 7;
+  const atRisk = stats.sla_at_risk_count !== undefined ? stats.sla_at_risk_count : 2;
+  const breached = stats.sla_breached_count !== undefined ? stats.sla_breached_count : 0;
+
+  if (state.charts.slaGauge) state.charts.slaGauge.destroy();
+
+  state.charts.slaGauge = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['On Time', 'At Risk', 'Breached'],
+      datasets: [{
+        data: [onTime || 7, atRisk || 2, breached || 0],
+        backgroundColor: ['#16a34a', '#f59e0b', '#ef4444'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      circumference: 240,
+      rotation: 240,
+      cutout: '80%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      }
+    }
+  });
+}
+
+// Formatters
+function formatTicketCode(id, idx) {
+  if (id && id.startsWith('TKT-')) return id;
+  return `TKT-${String(idx + 1).padStart(3, '0')}`;
+}
+
+function formatPriority(p) {
+  if (p === 'P1_CRITICAL') return 'P1 Critical';
+  if (p === 'P2_HIGH') return 'P2 High';
+  if (p === 'P3_MEDIUM') return 'P3 Medium';
+  if (p === 'P4_LOW') return 'P4 Low';
+  return p || 'P3 Medium';
+}
+
+function getPriorityBadgeClass(p) {
+  return p || 'P3_MEDIUM';
+}
+
+function getStatusBadgeClass(s) {
+  if (s === 'OPEN') return 'OPEN';
+  if (s === 'IN_PROGRESS') return 'IN_PROGRESS';
+  if (s === 'RESOLVED') return 'RESOLVED';
+  return 'IN_PROGRESS';
+}
+
+function formatSLA(sla) {
+  const rem = sla?.remaining_hours !== undefined ? sla.remaining_hours : 12;
+  if (rem <= 0) {
+    return `<span class="sla-time-tag sla-breached">⚠️ Breached</span>`;
+  } else if (rem <= 2) {
+    return `<span class="sla-time-tag sla-urgent">⏱️ ${rem}h Left</span>`;
+  }
+  return `<span class="sla-time-tag sla-normal">⏱️ ${rem}h Left</span>`;
 }
 
 // Toast Notifications

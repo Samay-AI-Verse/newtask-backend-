@@ -34,31 +34,31 @@
     </div>
 
     <nav class="sidebar-nav">
-      <button class="nav-item active" onclick="switchSidebarTab('dashboard', this)">
+      <button class="nav-item active" id="nav-dashboard" onclick="navigateToView('dashboard')">
         <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
         <span>Dashboard</span>
       </button>
-      <button class="nav-item" onclick="openCreateModal()">
-        <span class="nav-icon"><i data-lucide="plus"></i></span>
+      <button class="nav-item" id="nav-create_ticket" onclick="navigateToView('create_ticket')">
+        <span class="nav-icon"><i data-lucide="plus-circle"></i></span>
         <span>Create Ticket</span>
       </button>
-      <button class="nav-item" onclick="setPriorityFilter('ALL'); switchSidebarTab('all_tickets', this);">
+      <button class="nav-item" id="nav-all_tickets" onclick="navigateToView('all_tickets')">
         <span class="nav-icon"><i data-lucide="ticket"></i></span>
         <span>All Tickets</span>
       </button>
-      <button class="nav-item" onclick="filterMyTickets(); switchSidebarTab('my_tickets', this);">
-        <span class="nav-icon"><i data-lucide="user"></i></span>
+      <button class="nav-item" id="nav-my_tickets" onclick="navigateToView('my_tickets')">
+        <span class="nav-icon"><i data-lucide="user-check"></i></span>
         <span>My Tickets</span>
       </button>
-      <button class="nav-item" onclick="switchSidebarTab('analytics', this)">
+      <button class="nav-item" id="nav-analytics" onclick="navigateToView('analytics')">
         <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
         <span>Analytics</span>
       </button>
-      <button class="nav-item" onclick="exportTicketsCSV()">
+      <button class="nav-item" id="nav-reports" onclick="navigateToView('reports')">
         <span class="nav-icon"><i data-lucide="file-text"></i></span>
         <span>Reports</span>
       </button>
-      <button class="nav-item" onclick="openSettingsModal()">
+      <button class="nav-item" id="nav-settings" onclick="navigateToView('settings')">
         <span class="nav-icon"><i data-lucide="settings"></i></span>
         <span>Settings</span>
       </button>
@@ -81,139 +81,616 @@
     <header class="top-header">
       <div class="search-container">
         <span class="search-icon"><i data-lucide="search"></i></span>
-        <input type="text" id="global-search-input" class="search-input-field" placeholder="Search tickets, keywords, requester..." />
+        <input type="text" id="global-search-input" class="search-input-field" placeholder="Search tickets, keywords, requester, error codes..." />
         <span class="shortcut-badge">Ctrl + K</span>
       </div>
 
       <div class="header-user-section">
+        <button class="btn-primary" onclick="openCreateModal()" style="padding: 7px 14px; font-size: 12.5px;">
+          <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+          <span>New Request</span>
+        </button>
+
         <button class="notification-bell-btn" title="3 unread SLA notifications" onclick="showNotificationToast()">
           <i data-lucide="bell"></i>
           <span class="notification-count" id="header-notif-count">3</span>
         </button>
 
-        <div class="user-profile-box" onclick="openSettingsModal()">
+        <div class="user-profile-box" onclick="navigateToView('settings')">
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Admin Avatar" class="user-avatar" />
           <div class="user-info">
             <span class="user-name">Admin</span>
-            <span class="user-role">IT Support</span>
+            <span class="user-role">IT Support Specialist</span>
           </div>
           <i data-lucide="chevron-down" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
         </div>
       </div>
     </header>
 
-    <!-- Page Body -->
+    <!-- Page Body Multi-View Container -->
     <main class="page-container">
       
-      <!-- Welcome Header Banner -->
-      <section class="welcome-banner">
-        <div>
-          <h1 class="welcome-title">
-            <span>Welcome back, Admin!</span>
-          </h1>
-          <p class="welcome-subtitle">Here's what's happening with your service requests today.</p>
+      <!-- =======================================================
+           VIEW 1: DASHBOARD
+           ======================================================= -->
+      <section id="view-dashboard" class="app-view active">
+        <!-- Welcome Header Banner -->
+        <div class="welcome-banner">
+          <div>
+            <h1 class="welcome-title">
+              <span>Welcome back, Admin!</span>
+            </h1>
+            <p class="welcome-subtitle">Here's what's happening with your service requests today.</p>
+          </div>
+
+          <div class="welcome-status-group">
+            <div class="datetime-display">
+              <i data-lucide="calendar" style="width: 15px; height: 15px;"></i>
+              <span id="current-datetime-str">Sep 26, 2026 • 7:24 PM</span>
+            </div>
+            <div class="db-online-status" id="db-health-badge">
+              <span class="online-dot"></span>
+              <span>System Online • MongoDB Connected</span>
+            </div>
+          </div>
         </div>
 
-        <div class="welcome-status-group">
-          <div class="datetime-display">
-            <i data-lucide="calendar" style="width: 15px; height: 15px;"></i>
-            <span id="current-datetime-str">Sep 26, 2026 • 7:24 PM</span>
+        <!-- Top 5 Metric Cards Grid -->
+        <div class="kpi-row">
+          <!-- 1. Total Tickets -->
+          <div class="kpi-card" onclick="navigateToView('all_tickets')" style="cursor: pointer;">
+            <div class="kpi-icon-wrap kpi-icon-total">
+              <i data-lucide="layers"></i>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">Total Tickets</span>
+              <span class="kpi-number" id="kpi-total">9</span>
+              <span class="kpi-trend trend-up">↑ 12% <span style="color:var(--text-muted); font-weight:normal;">vs. last 24h</span></span>
+            </div>
           </div>
-          <div class="db-online-status" id="db-health-badge">
-            <span class="online-dot"></span>
-            <span>System Online • MongoDB Connected</span>
+
+          <!-- 2. P1 Critical -->
+          <div class="kpi-card" onclick="setPriorityFilter('P1_CRITICAL'); navigateToView('all_tickets');" style="cursor: pointer;">
+            <div class="kpi-icon-wrap kpi-icon-p1">
+              <i data-lucide="alert-circle"></i>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">P1 Critical</span>
+              <span class="kpi-number" id="kpi-p1">2</span>
+              <span class="kpi-trend trend-up">↑ 1 <span style="color:var(--text-muted); font-weight:normal;">needs attention</span></span>
+            </div>
+          </div>
+
+          <!-- 3. P2 High -->
+          <div class="kpi-card" onclick="setPriorityFilter('P2_HIGH'); navigateToView('all_tickets');" style="cursor: pointer;">
+            <div class="kpi-icon-wrap kpi-icon-p2">
+              <i data-lucide="alert-triangle"></i>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">P2 High</span>
+              <span class="kpi-number" id="kpi-p2">3</span>
+              <span class="kpi-trend trend-up">↑ 1 <span style="color:var(--text-muted); font-weight:normal;">service at risk</span></span>
+            </div>
+          </div>
+
+          <!-- 4. P3 Medium -->
+          <div class="kpi-card" onclick="setPriorityFilter('P3_MEDIUM'); navigateToView('all_tickets');" style="cursor: pointer;">
+            <div class="kpi-icon-wrap kpi-icon-p3">
+              <i data-lucide="info"></i>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">P3 Medium</span>
+              <span class="kpi-number" id="kpi-p3">3</span>
+              <span class="kpi-trend trend-neutral">→ 0 <span style="color:var(--text-muted); font-weight:normal;">normal SLA</span></span>
+            </div>
+          </div>
+
+          <!-- 5. P4 Low -->
+          <div class="kpi-card" onclick="setPriorityFilter('P4_LOW'); navigateToView('all_tickets');" style="cursor: pointer;">
+            <div class="kpi-icon-wrap kpi-icon-p4">
+              <i data-lucide="minus-circle"></i>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">P4 Low</span>
+              <span class="kpi-number" id="kpi-p4">1</span>
+              <span class="kpi-trend trend-down">↓ 1 <span style="color:var(--text-muted); font-weight:normal;">low impact</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main 2-Column Dashboard Layout -->
+        <div class="dashboard-grid">
+          
+          <!-- Left: Recent Tickets Table Panel -->
+          <div class="content-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title-text">Recent Tickets</div>
+                <div class="panel-desc-text">Live view of all service requests with AI-powered prioritization</div>
+              </div>
+
+              <div class="filter-pills-bar">
+                <button class="filter-pill active" data-filter="ALL" onclick="setPriorityFilter('ALL', this)">All (<span id="pill-all-count">9</span>)</button>
+                <button class="filter-pill" data-filter="P1_CRITICAL" onclick="setPriorityFilter('P1_CRITICAL', this)">P1</button>
+                <button class="filter-pill" data-filter="P2_HIGH" onclick="setPriorityFilter('P2_HIGH', this)">P2</button>
+                <button class="filter-pill" data-filter="P3_MEDIUM" onclick="setPriorityFilter('P3_MEDIUM', this)">P3</button>
+                <button class="filter-pill" data-filter="P4_LOW" onclick="setPriorityFilter('P4_LOW', this)">P4</button>
+                <button class="btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="navigateToView('all_tickets')">
+                  <i data-lucide="arrow-right" style="width: 13px; height: 13px;"></i>
+                  <span>View Full Table</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="tickets-table-wrap">
+              <table class="tickets-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Title & Description</th>
+                    <th>Category</th>
+                    <th>Priority</th>
+                    <th>Score</th>
+                    <th>SLA</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tickets-table-body">
+                  <!-- Rendered dynamically via app.js -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Live Activity Bar at bottom of table -->
+            <div class="live-activity-bar">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="online-dot"></span>
+                <strong style="color: #0f172a;">Live Activity:</strong>
+              </div>
+              <div class="activity-stream" id="activity-stream-box">
+                <span class="activity-item-pill"><strong>TKT-003</strong> moved to In Progress <span style="color:var(--text-muted);">11:38 AM</span></span>
+                <span class="activity-item-pill"><strong>TKT-002</strong> created <span style="color:var(--text-muted);">11:32 AM</span></span>
+                <span class="activity-item-pill"><strong>TKT-001</strong> priority updated to P1 <span style="color:var(--text-muted);">11:25 AM</span></span>
+              </div>
+              <a class="activity-link-viewall" onclick="openAuditStreamModal()">View All &gt;</a>
+            </div>
+          </div>
+
+          <!-- Right: Analytics & Quick Actions Sidebar Widgets -->
+          <div class="right-widgets-column">
+            
+            <!-- 1. Priority Distribution Widget -->
+            <div class="widget-card">
+              <div class="widget-title">Priority Distribution</div>
+              <div class="widget-subtitle">Total <span id="dist-total-count">9</span> tickets</div>
+
+              <div class="donut-chart-box">
+                <canvas id="chart-priority-donut"></canvas>
+                <div class="donut-center-label">
+                  <div class="donut-count-big" id="donut-center-num">9</div>
+                  <div class="donut-sub-text">Tickets</div>
+                </div>
+              </div>
+
+              <div class="legend-list">
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <span class="legend-color-dot" style="background:#ef4444;"></span>
+                    <span>P1 Critical</span>
+                  </div>
+                  <span class="legend-val-stat" id="legend-p1-stat">2 (22%)</span>
+                </div>
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <span class="legend-color-dot" style="background:#f59e0b;"></span>
+                    <span>P2 High</span>
+                  </div>
+                  <span class="legend-val-stat" id="legend-p2-stat">3 (33%)</span>
+                </div>
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <span class="legend-color-dot" style="background:#3b82f6;"></span>
+                    <span>P3 Medium</span>
+                  </div>
+                  <span class="legend-val-stat" id="legend-p3-stat">3 (33%)</span>
+                </div>
+                <div class="legend-row">
+                  <div class="legend-left">
+                    <span class="legend-color-dot" style="background:#64748b;"></span>
+                    <span>P4 Low</span>
+                  </div>
+                  <span class="legend-val-stat" id="legend-p4-stat">1 (11%)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. SLA Performance Gauge Widget -->
+            <div class="widget-card">
+              <div class="widget-title">SLA Performance</div>
+
+              <div class="sla-gauge-container">
+                <div class="sla-circular-box">
+                  <canvas id="chart-sla-gauge"></canvas>
+                  <div class="sla-center-text">
+                    <span class="sla-pct-num" id="sla-pct-val">78%</span>
+                    <span class="sla-pct-label">On Time</span>
+                  </div>
+                </div>
+
+                <div class="sla-legend-items">
+                  <div class="sla-legend-item" style="color:#16a34a;">
+                    <span class="legend-color-dot" style="background:#16a34a;"></span>
+                    <span><strong id="sla-ontime-num">7</strong> On Time</span>
+                  </div>
+                  <div class="sla-legend-item" style="color:#d97706;">
+                    <span class="legend-color-dot" style="background:#f59e0b;"></span>
+                    <span><strong id="sla-atrisk-num">2</strong> At Risk</span>
+                  </div>
+                  <div class="sla-legend-item" style="color:#dc2626;">
+                    <span class="legend-color-dot" style="background:#ef4444;"></span>
+                    <span><strong id="sla-breached-num">0</strong> Breached</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Quick Actions Card -->
+            <div class="widget-card">
+              <div class="widget-title">Quick Actions</div>
+
+              <button class="btn-create-ticket-main" onclick="openCreateModal()">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                <span>Create New Ticket</span>
+              </button>
+
+              <div class="quick-actions-2x2">
+                <button class="quick-action-btn" onclick="navigateToView('analytics')">
+                  <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i>
+                  <span>View Analytics</span>
+                </button>
+                <button class="quick-action-btn" onclick="exportTicketsCSV()">
+                  <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                  <span>Export Report</span>
+                </button>
+                <button class="quick-action-btn" id="btn-seed-fast" onclick="seedDatabaseDirect()">
+                  <i data-lucide="database" style="width: 14px; height: 14px;"></i>
+                  <span>Seed Demo Data</span>
+                </button>
+                <a href="/docs" target="_blank" class="quick-action-btn" style="text-decoration:none;">
+                  <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
+                  <span>Open Docs</span>
+                </a>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      <!-- Top 5 Metric Cards Grid -->
-      <section class="kpi-row">
-        <!-- 1. Total Tickets -->
-        <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-total">
-            <i data-lucide="layers"></i>
+      <!-- =======================================================
+           VIEW 2: CREATE TICKET STUDIO
+           ======================================================= -->
+      <section id="view-create_ticket" class="app-view">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1 class="view-title-main">
+              <i data-lucide="plus-circle"></i>
+              <span>Create & Ingest Service Request</span>
+            </h1>
+            <p class="view-subtitle-main">Submit incident details into the Real-Time AI Prioritization Engine and MongoDB cluster.</p>
           </div>
-          <div class="kpi-content">
-            <span class="kpi-label">Total Tickets</span>
-            <span class="kpi-number" id="kpi-total">9</span>
-            <span class="kpi-trend trend-up">↑ 12% <span style="color:var(--text-muted); font-weight:normal;">vs. last 24 hours</span></span>
-          </div>
-        </div>
-
-        <!-- 2. P1 Critical -->
-        <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p1">
-            <i data-lucide="alert-circle"></i>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">P1 Critical</span>
-            <span class="kpi-number" id="kpi-p1">2</span>
-            <span class="kpi-trend trend-up">↑ 1 <span style="color:var(--text-muted); font-weight:normal;">needs immediate attention</span></span>
+          <div class="view-header-actions">
+            <button class="btn-secondary" onclick="navigateToView('all_tickets')">
+              <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+              <span>Back to Tickets</span>
+            </button>
           </div>
         </div>
 
-        <!-- 3. P2 High -->
-        <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p2">
-            <i data-lucide="alert-triangle"></i>
+        <!-- 1-Click Instant Scenarios Bar -->
+        <div class="content-panel" style="padding: 16px 20px;">
+          <div style="font-size: 11.5px; font-weight: 800; color: #2563eb; margin-bottom: 8px; text-transform: uppercase; display:flex; align-items:center; gap:6px;">
+            <i data-lucide="sparkles" style="width:14px; height:14px;"></i>
+            <span>1-Click Test Scenario Presets (Simulate Production Ingestion)</span>
           </div>
-          <div class="kpi-content">
-            <span class="kpi-label">P2 High</span>
-            <span class="kpi-number" id="kpi-p2">3</span>
-            <span class="kpi-trend trend-up">↑ 1 <span style="color:var(--text-muted); font-weight:normal;">service at risk</span></span>
-          </div>
-        </div>
-
-        <!-- 4. P3 Medium -->
-        <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p3">
-            <i data-lucide="info"></i>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-label">P3 Medium</span>
-            <span class="kpi-number" id="kpi-p3">3</span>
-            <span class="kpi-trend trend-neutral">→ 0 <span style="color:var(--text-muted); font-weight:normal;">normal priority</span></span>
+          <div class="modal-presets-bar" id="studio-presets-container" style="margin-bottom:0; background:#ffffff;">
+            <!-- Rendered dynamically -->
           </div>
         </div>
 
-        <!-- 5. P4 Low -->
-        <div class="kpi-card">
-          <div class="kpi-icon-wrap kpi-icon-p4">
-            <i data-lucide="minus-circle"></i>
+        <div class="create-studio-grid">
+          <!-- Left: Ingestion Form -->
+          <div class="studio-form-card">
+            <form id="form-studio-create" onsubmit="handleStudioSubmit(event)">
+              <div class="form-field-group">
+                <label class="form-label-txt">Service Request Title *</label>
+                <input type="text" class="form-input-ctrl" id="studio-ticket-title" required placeholder="e.g. Critical: Payment Gateway 500 Outage on Checkout" />
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-label-txt">Issue Description & Technical Symptoms *</label>
+                <textarea class="form-textarea-ctrl" id="studio-ticket-desc" style="min-height: 110px;" required placeholder="Describe what happened, affected users, error codes, and urgency cues (e.g. 'crashed', 'production down', 'immediate attention')..."></textarea>
+              </div>
+
+              <div class="grid-cols-2">
+                <div class="form-field-group">
+                  <label class="form-label-txt">Blast Radius / Impact Scope</label>
+                  <select class="form-select-ctrl" id="studio-ticket-scope">
+                    <option value="ORGANIZATION">Organization-Wide Outage (+30 pts)</option>
+                    <option value="TEAM">Team / Department (+20 pts)</option>
+                    <option value="INDIVIDUAL" selected>Individual Employee (+10 pts)</option>
+                  </select>
+                </div>
+
+                <div class="form-field-group">
+                  <label class="form-label-txt">Business Criticality</label>
+                  <select class="form-select-ctrl" id="studio-ticket-crit">
+                    <option value="SEVERE">Severe (Revenue/Security Stopped) (+30 pts)</option>
+                    <option value="HIGH">High (Key Workflow Blocked) (+22 pts)</option>
+                    <option value="MEDIUM" selected>Medium (Standard Service) (+14 pts)</option>
+                    <option value="LOW">Low (Trivial / Cosmetic) (+5 pts)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid-cols-2">
+                <div class="form-field-group">
+                  <label class="form-label-txt">Requester Name *</label>
+                  <input type="text" class="form-input-ctrl" id="studio-ticket-req-name" required value="Sarah Jenkins" />
+                </div>
+                <div class="form-field-group">
+                  <label class="form-label-txt">Department *</label>
+                  <input type="text" class="form-input-ctrl" id="studio-ticket-req-dept" required value="Finance" />
+                </div>
+              </div>
+
+              <div class="grid-cols-2">
+                <div class="form-field-group">
+                  <label class="form-label-txt">Requester Email *</label>
+                  <input type="email" class="form-input-ctrl" id="studio-ticket-req-email" required value="sarah.j@company.com" />
+                </div>
+                <div class="form-field-group" style="display: flex; align-items: center; padding-top: 24px;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; cursor: pointer; color: #0f172a;">
+                    <input type="checkbox" id="studio-ticket-vip" style="width: 16px; height: 16px;" />
+                    <span>👑 VIP Requester (+10 bonus pts)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 14px;">
+                <button type="submit" class="btn-primary" id="btn-studio-submit" style="padding: 12px 24px; font-size: 14px; flex: 1; justify-content: center;">
+                  <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
+                  <span>Submit Ticket & Trigger AI Prioritization</span>
+                </button>
+                <button type="button" class="btn-secondary" onclick="resetStudioForm()" style="padding: 12px 18px;">
+                  Reset
+                </button>
+              </div>
+            </form>
           </div>
-          <div class="kpi-content">
-            <span class="kpi-label">P4 Low</span>
-            <span class="kpi-number" id="kpi-p4">1</span>
-            <span class="kpi-trend trend-down">↓ 1 <span style="color:var(--text-muted); font-weight:normal;">low impact</span></span>
+
+          <!-- Right: AI Scoring Simulator Sidebar -->
+          <div class="ai-engine-sidebar-card">
+            <div class="ai-engine-badge-top">
+              <i data-lucide="cpu" style="width: 14px; height: 14px;"></i>
+              <span>Live AI Inference Engine</span>
+            </div>
+
+            <div>
+              <div style="font-size: 12px; font-weight: 700; color: var(--text-muted);">PREDICTED SCORE</div>
+              <div style="display: flex; align-items: baseline; gap: 6px;">
+                <span class="score-display-huge" id="studio-score-huge">45</span>
+                <span style="font-size: 16px; font-weight: 700; color: var(--text-muted);">/ 100</span>
+              </div>
+            </div>
+
+            <div class="score-progress-track" style="height: 10px;">
+              <div class="score-progress-bar" id="studio-score-bar" style="width: 45%;"></div>
+            </div>
+
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; padding: 12px;">
+              <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                Predicted Priority & Target SLA
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span class="badge-pill-priority P3_MEDIUM" id="studio-priority-pill" style="font-size: 12px; padding: 4px 10px;">P3 Medium</span>
+                <span style="font-size: 12px; font-weight: 700; color: #0f172a;" id="studio-sla-target-text">⏱️ 24h SLA Limit</span>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+                Scoring Weight Factors:
+              </div>
+              <div class="score-factor-row">
+                <span>Impact Blast Radius</span>
+                <span class="score-factor-val" id="factor-blast">+10 pts</span>
+              </div>
+              <div class="score-factor-row">
+                <span>Business Criticality</span>
+                <span class="score-factor-val" id="factor-crit">+14 pts</span>
+              </div>
+              <div class="score-factor-row">
+                <span>Urgency NLP Keywords</span>
+                <span class="score-factor-val" id="factor-nlp" style="color:#ef4444;">+0 pts</span>
+              </div>
+              <div class="score-factor-row">
+                <span>VIP Requester Weight</span>
+                <span class="score-factor-val" id="factor-vip">+0 pts</span>
+              </div>
+            </div>
+
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+              💡 <em>Tickets scoring &gt;= 80 automatically escalate to P1 Critical with 1-hour SLA.</em>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Main 2-Column Dashboard Layout -->
-      <section class="dashboard-grid">
-        
-        <!-- Left: Recent Tickets Table Panel -->
+      <!-- =======================================================
+           VIEW 3: ALL TICKETS WORKBENCH
+           ======================================================= -->
+      <section id="view-all_tickets" class="app-view">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1 class="view-title-main">
+              <i data-lucide="ticket"></i>
+              <span>All Tickets Management Workbench</span>
+            </h1>
+            <p class="view-subtitle-main">Full triage queue with dynamic filters, multi-column search, batch operations, and SLA tracking.</p>
+          </div>
+          <div class="view-header-actions">
+            <button class="btn-primary" onclick="openCreateModal()">
+              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+              <span>New Ticket</span>
+            </button>
+            <button class="btn-secondary" onclick="exportTicketsCSV()">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+              <span>Export CSV</span>
+            </button>
+            <button class="btn-secondary" onclick="loadData(true)">
+              <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Comprehensive Filter Controls -->
+        <div class="tickets-control-bar">
+          <div class="control-bar-top-row">
+            <div class="control-search-wrap">
+              <span class="search-icon"><i data-lucide="search"></i></span>
+              <input type="text" id="all-tickets-search" class="search-input-field" placeholder="Search ticket #, title, description, requester..." oninput="handleAllTicketsSearch(this.value)" />
+            </div>
+
+            <div class="control-filters-group">
+              <select class="filter-select" id="all-filter-status" onchange="handleAllTicketsFilterChange()">
+                <option value="ALL">All Statuses</option>
+                <option value="OPEN">Open</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="PENDING_INFO">Pending Info</option>
+                <option value="ESCALATED">Escalated</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
+
+              <select class="filter-select" id="all-filter-category" onchange="handleAllTicketsFilterChange()">
+                <option value="ALL">All Categories</option>
+                <option value="Payment & Billing">Payment & Billing</option>
+                <option value="Finance & Operations">Finance & Operations</option>
+                <option value="Network & Connectivity">Network & Connectivity</option>
+                <option value="Enterprise Applications">Enterprise Applications</option>
+                <option value="IT Hardware & Workstations">IT Hardware & Workstations</option>
+                <option value="Identity & Security">Identity & Security</option>
+              </select>
+
+              <select class="filter-select" id="all-filter-sort" onchange="handleAllTicketsSortChange(this.value)">
+                <option value="priority_desc">Sort: Priority Score (Highest)</option>
+                <option value="newest">Sort: Newest First</option>
+                <option value="sla_urgent">Sort: Urgent SLA Deadline</option>
+              </select>
+
+              <div class="view-mode-toggle">
+                <button class="view-mode-btn active" id="btn-view-table" onclick="setAllTicketsLayout('table')">
+                  <i data-lucide="table"></i>
+                  <span>Table</span>
+                </button>
+                <button class="view-mode-btn" id="btn-view-kanban" onclick="setAllTicketsLayout('kanban')">
+                  <i data-lucide="grid"></i>
+                  <span>Cards</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-pills-bar">
+            <button class="filter-pill active" data-filter="ALL" onclick="setPriorityFilter('ALL', this)">All Priorities (<span id="all-tab-total-cnt">9</span>)</button>
+            <button class="filter-pill" data-filter="P1_CRITICAL" onclick="setPriorityFilter('P1_CRITICAL', this)">P1 Critical (<span id="all-tab-p1-cnt">2</span>)</button>
+            <button class="filter-pill" data-filter="P2_HIGH" onclick="setPriorityFilter('P2_HIGH', this)">P2 High (<span id="all-tab-p2-cnt">3</span>)</button>
+            <button class="filter-pill" data-filter="P3_MEDIUM" onclick="setPriorityFilter('P3_MEDIUM', this)">P3 Medium (<span id="all-tab-p3-cnt">3</span>)</button>
+            <button class="filter-pill" data-filter="P4_LOW" onclick="setPriorityFilter('P4_LOW', this)">P4 Low (<span id="all-tab-p4-cnt">1</span>)</button>
+          </div>
+        </div>
+
+        <!-- Table View Display -->
+        <div id="all-tickets-table-container" class="content-panel">
+          <div class="tickets-table-wrap">
+            <table class="tickets-table">
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Title & Summary</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>AI Score</th>
+                  <th>Requester</th>
+                  <th>SLA Clock</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="all-tickets-tbody">
+                <!-- Rendered dynamically via app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Kanban Cards View Display -->
+        <div id="all-tickets-kanban-container" class="kanban-grid" style="display: none;">
+          <!-- Rendered dynamically via app.js -->
+        </div>
+      </section>
+
+      <!-- =======================================================
+           VIEW 4: MY TICKETS
+           ======================================================= -->
+      <section id="view-my_tickets" class="app-view">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1 class="view-title-main">
+              <i data-lucide="user-check"></i>
+              <span>My Assigned Tickets</span>
+            </h1>
+            <p class="view-subtitle-main">Assigned queue for Admin (IT Support Specialist). Track your active investigations and SLAs.</p>
+          </div>
+          <div class="view-header-actions">
+            <button class="btn-secondary" onclick="filterMyTickets(); showToastNotification('Showing tickets assigned to you', 'info');">
+              <i data-lucide="filter" style="width: 14px; height: 14px;"></i>
+              <span>Filter Assigned</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- My Queue Summary Banner -->
+        <div class="schedule-banner" style="background: linear-gradient(135deg, #1e3a8a, #1e293b);">
+          <div class="schedule-banner-text">
+            <h3>👤 Active Agent Workstation: Admin</h3>
+            <p>You have <strong style="color:#60a5fa;" id="my-active-count">4</strong> active investigations in your workload queue.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-primary" style="background:#3b82f6; border-color:#3b82f6;" onclick="openCreateModal()">
+              + Ingest Ticket
+            </button>
+          </div>
+        </div>
+
+        <!-- My Tickets Table Panel -->
         <div class="content-panel">
           <div class="panel-header-row">
             <div>
-              <div class="panel-title-text">Recent Tickets</div>
-              <div class="panel-desc-text">Live view of all service requests with AI-powered prioritization</div>
+              <div class="panel-title-text">Assigned Service Queue</div>
+              <div class="panel-desc-text">Tickets currently requiring your direct investigation, notes, or resolution</div>
             </div>
-
             <div class="filter-pills-bar">
-              <button class="filter-pill active" data-filter="ALL" onclick="setPriorityFilter('ALL', this)">All (<span id="pill-all-count">9</span>)</button>
-              <button class="filter-pill" data-filter="P1_CRITICAL" onclick="setPriorityFilter('P1_CRITICAL', this)">P1</button>
-              <button class="filter-pill" data-filter="P2_HIGH" onclick="setPriorityFilter('P2_HIGH', this)">P2</button>
-              <button class="filter-pill" data-filter="P3_MEDIUM" onclick="setPriorityFilter('P3_MEDIUM', this)">P3</button>
-              <button class="filter-pill" data-filter="P4_LOW" onclick="setPriorityFilter('P4_LOW', this)">P4</button>
-              <button class="btn-filter-dropdown" onclick="openCategoryFilterModal()">
-                <i data-lucide="sliders-horizontal" style="width: 14px; height: 14px;"></i>
-                <span>Filter</span>
-              </button>
+              <button class="filter-pill active" onclick="filterMyTicketsSubTab('ALL', this)">All (<span id="my-tab-all-cnt">4</span>)</button>
+              <button class="filter-pill" onclick="filterMyTicketsSubTab('IN_PROGRESS', this)">In Progress</button>
+              <button class="filter-pill" onclick="filterMyTicketsSubTab('CRITICAL', this)">P1/P2 Critical</button>
+              <button class="filter-pill" onclick="filterMyTicketsSubTab('RESOLVED', this)">Resolved</button>
             </div>
           </div>
 
-          <!-- Table Container -->
           <div class="tickets-table-wrap">
             <table class="tickets-table">
               <thead>
@@ -223,141 +700,522 @@
                   <th>Category</th>
                   <th>Priority</th>
                   <th>Score</th>
-                  <th>SLA</th>
+                  <th>SLA Time</th>
                   <th>Status</th>
-                  <th style="text-align: right;">Actions</th>
+                  <th style="text-align: right;">Quick Actions</th>
                 </tr>
               </thead>
-              <tbody id="tickets-table-body">
-                <!-- Rendered dynamically via app.js -->
+              <tbody id="my-tickets-tbody">
+                <!-- Rendered dynamically -->
               </tbody>
             </table>
           </div>
-
-          <!-- Live Activity Bar at bottom of table -->
-          <div class="live-activity-bar">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="online-dot"></span>
-              <strong style="color: #0f172a;">Live Activity:</strong>
-            </div>
-            <div class="activity-stream" id="activity-stream-box">
-              <span class="activity-item-pill"><strong>TKT-003</strong> moved to In Progress <span style="color:var(--text-muted);">11:38 AM</span></span>
-              <span class="activity-item-pill"><strong>TKT-002</strong> created <span style="color:var(--text-muted);">11:32 AM</span></span>
-              <span class="activity-item-pill"><strong>TKT-001</strong> priority updated to P1 <span style="color:var(--text-muted);">11:25 AM</span></span>
-            </div>
-            <a class="activity-link-viewall" onclick="openAuditStreamModal()">View All &gt;</a>
-          </div>
-        </div>
-
-        <!-- Right: Analytics & Quick Actions Sidebar Widgets -->
-        <div class="right-widgets-column">
-          
-          <!-- 1. Priority Distribution Widget -->
-          <div class="widget-card">
-            <div class="widget-title">Priority Distribution</div>
-            <div class="widget-subtitle">Total <span id="dist-total-count">9</span> tickets</div>
-
-            <div class="donut-chart-box">
-              <canvas id="chart-priority-donut"></canvas>
-              <div class="donut-center-label">
-                <div class="donut-count-big" id="donut-center-num">9</div>
-                <div class="donut-sub-text">Tickets</div>
-              </div>
-            </div>
-
-            <div class="legend-list">
-              <div class="legend-row">
-                <div class="legend-left">
-                  <span class="legend-color-dot" style="background:#ef4444;"></span>
-                  <span>P1 Critical</span>
-                </div>
-                <span class="legend-val-stat" id="legend-p1-stat">2 (22%)</span>
-              </div>
-              <div class="legend-row">
-                <div class="legend-left">
-                  <span class="legend-color-dot" style="background:#f59e0b;"></span>
-                  <span>P2 High</span>
-                </div>
-                <span class="legend-val-stat" id="legend-p2-stat">3 (33%)</span>
-              </div>
-              <div class="legend-row">
-                <div class="legend-left">
-                  <span class="legend-color-dot" style="background:#3b82f6;"></span>
-                  <span>P3 Medium</span>
-                </div>
-                <span class="legend-val-stat" id="legend-p3-stat">3 (33%)</span>
-              </div>
-              <div class="legend-row">
-                <div class="legend-left">
-                  <span class="legend-color-dot" style="background:#64748b;"></span>
-                  <span>P4 Low</span>
-                </div>
-                <span class="legend-val-stat" id="legend-p4-stat">1 (11%)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. SLA Performance Gauge Widget -->
-          <div class="widget-card">
-            <div class="widget-title">SLA Performance</div>
-
-            <div class="sla-gauge-container">
-              <div class="sla-circular-box">
-                <canvas id="chart-sla-gauge"></canvas>
-                <div class="sla-center-text">
-                  <span class="sla-pct-num" id="sla-pct-val">78%</span>
-                  <span class="sla-pct-label">On Time</span>
-                </div>
-              </div>
-
-              <div class="sla-legend-items">
-                <div class="sla-legend-item" style="color:#16a34a;">
-                  <span class="legend-color-dot" style="background:#16a34a;"></span>
-                  <span><strong id="sla-ontime-num">7</strong> On Time</span>
-                </div>
-                <div class="sla-legend-item" style="color:#d97706;">
-                  <span class="legend-color-dot" style="background:#f59e0b;"></span>
-                  <span><strong id="sla-atrisk-num">2</strong> At Risk</span>
-                </div>
-                <div class="sla-legend-item" style="color:#dc2626;">
-                  <span class="legend-color-dot" style="background:#ef4444;"></span>
-                  <span><strong id="sla-breached-num">0</strong> Breached</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. Quick Actions Card -->
-          <div class="widget-card">
-            <div class="widget-title">Quick Actions</div>
-
-            <button class="btn-create-ticket-main" onclick="openCreateModal()">
-              <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
-              <span>Create New Ticket</span>
-            </button>
-
-            <div class="quick-actions-2x2">
-              <button class="quick-action-btn" onclick="openAnalyticsModal()">
-                <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i>
-                <span>View Analytics</span>
-              </button>
-              <button class="quick-action-btn" onclick="exportTicketsCSV()">
-                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
-                <span>Export Report</span>
-              </button>
-              <button class="quick-action-btn" id="btn-seed-fast" onclick="seedDatabaseDirect()">
-                <i data-lucide="database" style="width: 14px; height: 14px;"></i>
-                <span>Seed Demo Data</span>
-              </button>
-              <a href="/docs" target="_blank" class="quick-action-btn">
-                <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
-                <span>Open Docs</span>
-              </a>
-            </div>
-          </div>
-
         </div>
       </section>
+
+      <!-- =======================================================
+           VIEW 5: ANALYTICS
+           ======================================================= -->
+      <section id="view-analytics" class="app-view">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1 class="view-title-main">
+              <i data-lucide="bar-chart-3"></i>
+              <span>Intelligent Analytics & SLA Intelligence</span>
+            </h1>
+            <p class="view-subtitle-main">Deep insights into queue health, incident blast radius, SLA adherence, and team resolution velocity.</p>
+          </div>
+          <div class="view-header-actions">
+            <select class="filter-select" id="analytics-timeframe" onchange="renderAnalyticsView()">
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d" selected>Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="all">All Time</option>
+            </select>
+            <button class="btn-secondary" onclick="exportTicketsCSV()">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+              <span>Export Analytics</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Top Analytics KPIs -->
+        <div class="analytics-kpis-grid">
+          <div class="analytics-kpi-card">
+            <div class="analytics-kpi-header">
+              <span>Mean Time To Resolution (MTTR)</span>
+              <i data-lucide="clock" style="color:#2563eb; width:18px; height:18px;"></i>
+            </div>
+            <div class="analytics-kpi-val">1.4 hrs</div>
+            <span class="kpi-trend trend-up">↓ 18% faster than last week</span>
+          </div>
+
+          <div class="analytics-kpi-card">
+            <div class="analytics-kpi-header">
+              <span>SLA Target Adherence</span>
+              <i data-lucide="check-circle" style="color:#16a34a; width:18px; height:18px;"></i>
+            </div>
+            <div class="analytics-kpi-val" id="analytics-sla-val">94.8%</div>
+            <span class="kpi-trend trend-up">↑ 2.3% vs target (90%)</span>
+          </div>
+
+          <div class="analytics-kpi-card">
+            <div class="analytics-kpi-header">
+              <span>AI Prioritization Accuracy</span>
+              <i data-lucide="sparkles" style="color:#9333ea; width:18px; height:18px;"></i>
+            </div>
+            <div class="analytics-kpi-val">99.1%</div>
+            <span class="kpi-trend trend-up">Zero manual overrides</span>
+          </div>
+
+          <div class="analytics-kpi-card">
+            <div class="analytics-kpi-header">
+              <span>Average Queue Score</span>
+              <i data-lucide="activity" style="color:#ea580c; width:18px; height:18px;"></i>
+            </div>
+            <div class="analytics-kpi-val" id="analytics-avg-score">58.4</div>
+            <span class="kpi-trend trend-neutral">Medium-High Severity</span>
+          </div>
+        </div>
+
+        <!-- 4 Interactive Charts Grid -->
+        <div class="analytics-charts-grid">
+          <!-- Chart 1: Priority Donut -->
+          <div class="analytics-chart-panel">
+            <div class="chart-header-row">
+              <div>
+                <div class="chart-title-text">Incident Severity Breakdown</div>
+                <div class="chart-subtitle-text">Distribution across P1-P4 priority tiers</div>
+              </div>
+            </div>
+            <div class="chart-canvas-box">
+              <canvas id="chart-analytics-priority"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Volume -->
+          <div class="analytics-chart-panel">
+            <div class="chart-header-row">
+              <div>
+                <div class="chart-title-text">Service Requests by Category</div>
+                <div class="chart-subtitle-text">Volume distribution across infrastructure & apps</div>
+              </div>
+            </div>
+            <div class="chart-canvas-box">
+              <canvas id="chart-analytics-categories"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: Department Request Volume -->
+          <div class="analytics-chart-panel">
+            <div class="chart-header-row">
+              <div>
+                <div class="chart-title-text">Department Ingestion Volume</div>
+                <div class="chart-subtitle-text">Impact breakdown by business unit</div>
+              </div>
+            </div>
+            <div class="chart-canvas-box">
+              <canvas id="chart-analytics-depts"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 4: Resolution SLA Adherence Gauge -->
+          <div class="analytics-chart-panel">
+            <div class="chart-header-row">
+              <div>
+                <div class="chart-title-text">SLA Compliance Health</div>
+                <div class="chart-subtitle-text">On-Time vs At-Risk vs Breached incidents</div>
+              </div>
+            </div>
+            <div class="chart-canvas-box">
+              <canvas id="chart-analytics-sla"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Incident Drivers & Root Cause Analysis -->
+        <div class="content-panel">
+          <div class="panel-header-row">
+            <div>
+              <div class="panel-title-text">Top Incident Drivers & Root Causes</div>
+              <div class="panel-desc-text">Common problem categories and recurring issues identified by AI triage</div>
+            </div>
+          </div>
+          <table class="drivers-table">
+            <thead>
+              <tr>
+                <th>Incident Pattern</th>
+                <th>Affected Category</th>
+                <th>Avg Blast Radius</th>
+                <th>Avg Priority</th>
+                <th>Recurring Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Stripe / Gateway 500 Timeouts</strong></td>
+                <td>Payment & Billing</td>
+                <td><span class="badge-pill-priority P1_CRITICAL">ORGANIZATION</span></td>
+                <td>P1 Critical</td>
+                <td>3 Incidents</td>
+              </tr>
+              <tr>
+                <td><strong>Payroll Lockout on Salary Cutoff</strong></td>
+                <td>Finance & Operations</td>
+                <td><span class="badge-pill-priority P1_CRITICAL">ORGANIZATION</span></td>
+                <td>P1 Critical</td>
+                <td>1 Incident</td>
+              </tr>
+              <tr>
+                <td><strong>Marketing Global VPN Tunnel Dropout</strong></td>
+                <td>Network & Connectivity</td>
+                <td><span class="badge-pill-priority P2_HIGH">TEAM</span></td>
+                <td>P2 High</td>
+                <td>4 Incidents</td>
+              </tr>
+              <tr>
+                <td><strong>SAP SAP_RFC_ERROR Timeout</strong></td>
+                <td>Enterprise Applications</td>
+                <td><span class="badge-pill-priority P2_HIGH">TEAM</span></td>
+                <td>P2 High</td>
+                <td>2 Incidents</td>
+              </tr>
+              <tr>
+                <td><strong>Desk Peripherals & Mouse Replacements</strong></td>
+                <td>IT Hardware</td>
+                <td><span class="badge-pill-priority P4_LOW">INDIVIDUAL</span></td>
+                <td>P4 Low</td>
+                <td>5 Incidents</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- =======================================================
+           VIEW 6: REPORTS
+           ======================================================= -->
+      <section id="view-reports" class="app-view">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1 class="view-title-main">
+              <i data-lucide="file-text"></i>
+              <span>Executive Reports & Compliance Center</span>
+            </h1>
+            <p class="view-subtitle-main">Generate, preview, schedule, and export compliance audits and SLA operational reports.</p>
+          </div>
+          <div class="view-header-actions">
+            <button class="btn-primary" onclick="exportTicketsCSV()">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+              <span>Download CSV Report</span>
+            </button>
+            <button class="btn-secondary" onclick="exportTicketsJSON()">
+              <i data-lucide="file-code" style="width: 14px; height: 14px;"></i>
+              <span>Export JSON</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Report Generator Cards -->
+        <div class="reports-hero-grid">
+          <div class="report-type-card">
+            <div class="report-icon-box">
+              <i data-lucide="shield-alert"></i>
+            </div>
+            <div class="report-card-title">SLA Compliance Audit Report</div>
+            <div class="report-card-desc">Detailed log of all P1-P4 tickets, time-to-first-response, resolution deadlines, and SLA breaches for executive auditing.</div>
+            <button class="btn-primary" style="margin-top:auto;" onclick="generateReportType('sla')">
+              <i data-lucide="file-check" style="width:14px; height:14px;"></i>
+              <span>Generate SLA Audit</span>
+            </button>
+          </div>
+
+          <div class="report-type-card">
+            <div class="report-icon-box" style="background:#fef3c7; color:#d97706;">
+              <i data-lucide="pie-chart"></i>
+            </div>
+            <div class="report-card-title">Incident Category & Blast Radius</div>
+            <div class="report-card-desc">Breakdown of organization-wide outages vs department blockers, recurring root causes, and business impact.</div>
+            <button class="btn-secondary" style="margin-top:auto;" onclick="generateReportType('category')">
+              <i data-lucide="eye" style="width:14px; height:14px;"></i>
+              <span>Preview Breakdown</span>
+            </button>
+          </div>
+
+          <div class="report-type-card">
+            <div class="report-icon-box" style="background:#f0fdf4; color:#16a34a;">
+              <i data-lucide="users"></i>
+            </div>
+            <div class="report-card-title">Agent Triage & Velocity Report</div>
+            <div class="report-card-desc">Workload distribution per IT support specialist, notes appended, status lifecycle velocity, and resolution times.</div>
+            <button class="btn-secondary" style="margin-top:auto;" onclick="generateReportType('agent')">
+              <i data-lucide="user-check" style="width:14px; height:14px;"></i>
+              <span>View Team Metrics</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Automated Report Dispatch Card -->
+        <div class="schedule-banner">
+          <div class="schedule-banner-text">
+            <h3>⏰ Automated Scheduled Reports</h3>
+            <p>Daily 9:00 AM SLA Summary automatically dispatched to <code>it-ops@company.com</code> and Slack channel <code>#it-triage-alerts</code>.</p>
+          </div>
+          <button class="btn-secondary" style="background:#ffffff; color:#0f172a;" onclick="showToastNotification('Scheduled automated email digest active', 'success')">
+            Configure Schedule
+          </button>
+        </div>
+
+        <!-- Interactive Report Data Table -->
+        <div class="content-panel">
+          <div class="panel-header-row">
+            <div>
+              <div class="panel-title-text" id="report-table-title">Live SLA Compliance Audit Dataset</div>
+              <div class="panel-desc-text">Ready for export or print formatting</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="window.print()">
+                <i data-lucide="printer" style="width:13px; height:13px;"></i>
+                <span>Print</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="tickets-table-wrap">
+            <table class="tickets-table">
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Priority Tier</th>
+                  <th>Score</th>
+                  <th>SLA Target</th>
+                  <th>Lifecycle Status</th>
+                  <th>Requester Dept</th>
+                </tr>
+              </thead>
+              <tbody id="reports-table-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================================================
+           VIEW 7: SETTINGS
+           ======================================================= -->
+      <section id="view-settings" class="app-view">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1 class="view-title-main">
+              <i data-lucide="settings"></i>
+              <span>System Settings & AI Engine Configuration</span>
+            </h1>
+            <p class="view-subtitle-main">Customize intelligent prioritization weights, SLA target hours, MongoDB connection, and notifications.</p>
+          </div>
+          <div class="view-header-actions">
+            <button class="btn-primary" onclick="saveSettings()">
+              <i data-lucide="save" style="width: 14px; height: 14px;"></i>
+              <span>Save Configuration</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Multi-Tab Layout -->
+        <div class="settings-layout">
+          <!-- Sidebar tabs -->
+          <div class="settings-sidebar">
+            <button class="settings-tab-btn active" onclick="switchSettingsTab('general', this)">
+              <i data-lucide="sliders"></i>
+              <span>General & Portal</span>
+            </button>
+            <button class="settings-tab-btn" onclick="switchSettingsTab('ai_weights', this)">
+              <i data-lucide="sparkles"></i>
+              <span>AI Prioritization Rules</span>
+            </button>
+            <button class="settings-tab-btn" onclick="switchSettingsTab('sla', this)">
+              <i data-lucide="clock"></i>
+              <span>SLA Target Hours</span>
+            </button>
+            <button class="settings-tab-btn" onclick="switchSettingsTab('database', this)">
+              <i data-lucide="database"></i>
+              <span>Database & System</span>
+            </button>
+            <button class="settings-tab-btn" onclick="switchSettingsTab('integrations', this)">
+              <i data-lucide="webhook"></i>
+              <span>Integrations & Alerts</span>
+            </button>
+          </div>
+
+          <!-- Content Pane -->
+          <div class="settings-content-pane">
+            
+            <!-- Tab 1: General -->
+            <div id="settings-tab-general" class="settings-pane-content">
+              <div class="settings-section-title">General Application Preferences</div>
+              
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Platform Name</div>
+                  <div class="settings-row-hint">Displayed in header and reports</div>
+                </div>
+                <input type="text" class="form-input-ctrl" value="IntelliTicket Service Portal" id="setting-app-name" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Default Support Email</div>
+                  <div class="settings-row-hint">Used for system notifications</div>
+                </div>
+                <input type="email" class="form-input-ctrl" value="it-support@company.com" id="setting-support-email" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Timezone</div>
+                  <div class="settings-row-hint">For SLA calculation and clock</div>
+                </div>
+                <select class="form-select-ctrl">
+                  <option value="Asia/Kolkata" selected>Asia/Kolkata (IST +5:30)</option>
+                  <option value="America/New_York">America/New_York (EST)</option>
+                  <option value="Europe/London">Europe/London (GMT)</option>
+                  <option value="UTC">UTC Universal Time</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Tab 2: AI Weights -->
+            <div id="settings-tab-ai_weights" class="settings-pane-content" style="display: none;">
+              <div class="settings-section-title">Intelligent Prioritization Weight Parameters</div>
+              
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Organization Outage Points</div>
+                  <div class="settings-row-hint">Added when Blast Radius = ORGANIZATION</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="30" id="weight-org" min="10" max="50" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Severe Criticality Points</div>
+                  <div class="settings-row-hint">Added when Criticality = SEVERE</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="30" id="weight-crit" min="10" max="50" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Urgency Keyword Multiplier</div>
+                  <div class="settings-row-hint">Points per detected critical keyword</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="25" id="weight-keywords" min="5" max="35" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">VIP Requester Bonus</div>
+                  <div class="settings-row-hint">Bonus points for executive tier</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="10" id="weight-vip" min="0" max="25" />
+              </div>
+            </div>
+
+            <!-- Tab 3: SLA Targets -->
+            <div id="settings-tab-sla" class="settings-pane-content" style="display: none;">
+              <div class="settings-section-title">SLA Target Resolution Limits (Hours)</div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">P1 Critical SLA Limit</div>
+                  <div class="settings-row-hint">Maximum hours before SLA breach</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="1" id="sla-p1-hrs" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">P2 High SLA Limit</div>
+                  <div class="settings-row-hint">Target resolution window</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="4" id="sla-p2-hrs" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">P3 Medium SLA Limit</div>
+                  <div class="settings-row-hint">Standard service request window</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="24" id="sla-p3-hrs" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">P4 Low SLA Limit</div>
+                  <div class="settings-row-hint">Cosmetic / peripheral window</div>
+                </div>
+                <input type="number" class="form-input-ctrl" value="72" id="sla-p4-hrs" />
+              </div>
+            </div>
+
+            <!-- Tab 4: Database -->
+            <div id="settings-tab-database" class="settings-pane-content" style="display: none;">
+              <div class="settings-section-title">MongoDB Connection & Health Diagnostics</div>
+
+              <div class="system-status-indicator" style="margin-top: 18px;">
+                <span class="online-dot"></span>
+                <span>MongoDB Cluster: ONLINE & CONNECTED</span>
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Database Name</div>
+                </div>
+                <input type="text" class="form-input-ctrl" value="intelliticket_db" readonly />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Database Cluster URI</div>
+                </div>
+                <input type="text" class="form-input-ctrl" value="mongodb://localhost:27017" readonly />
+              </div>
+
+              <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn-primary" onclick="seedDatabaseDirect()">
+                  <i data-lucide="database" style="width: 14px; height: 14px;"></i>
+                  <span>Reseed Demo Database</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tab 5: Integrations -->
+            <div id="settings-tab-integrations" class="settings-pane-content" style="display: none;">
+              <div class="settings-section-title">Enterprise Webhooks & Alert Routing</div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">Slack Webhook URL</div>
+                  <div class="settings-row-hint">For immediate P1/P2 outage alerts</div>
+                </div>
+                <input type="text" class="form-input-ctrl" placeholder="https://hooks.slack.com/services/..." value="https://hooks.slack.com/services/T00/B00/XXXXX" />
+              </div>
+
+              <div class="settings-form-row" style="margin-top: 18px;">
+                <div>
+                  <div class="settings-row-label">PagerDuty Integration Key</div>
+                  <div class="settings-row-hint">Trigger on-call escalation for P1</div>
+                </div>
+                <input type="password" class="form-input-ctrl" value="pd_live_secret_key_84928" />
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -491,7 +1349,7 @@
             <option value="ESCALATED">ESCALATED</option>
             <option value="RESOLVED">RESOLVED</option>
           </select>
-          <button class="quick-action-btn" onclick="applyStatusChangeFromModal()" style="background: #2563eb; color: white; border-color: #2563eb; font-weight: 700; padding: 0 16px;">
+          <button class="btn-primary" onclick="applyStatusChangeFromModal()" style="padding: 0 16px;">
             Update
           </button>
         </div>
@@ -502,7 +1360,7 @@
         <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">📝 Append Internal Investigation Note:</div>
         <form onsubmit="handleAppendNote(event)" style="display: flex; gap: 8px;">
           <input type="text" class="form-input-ctrl" id="modal-note-input" placeholder="Enter findings, fix status, or notes..." required style="flex: 1;" />
-          <button type="submit" class="quick-action-btn" style="padding: 0 16px;">Add Note</button>
+          <button type="submit" class="btn-secondary" style="padding: 0 16px;">Add Note</button>
         </form>
       </div>
 
