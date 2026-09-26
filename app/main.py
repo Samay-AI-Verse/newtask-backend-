@@ -49,8 +49,11 @@ app.add_middleware(
 app.include_router(tickets.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
 
-# Mount Static Files for Demo UI
-static_dir = os.path.join(os.path.dirname(__file__), "static")
+# Mount Static Files for Demo UI (Checks root ./static first, falls back to ./app/static)
+root_static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+app_static_dir = os.path.join(os.path.dirname(__file__), "static")
+static_dir = root_static_dir if os.path.exists(root_static_dir) else app_static_dir
+
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
