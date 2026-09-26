@@ -12,9 +12,9 @@ from app.routers import tickets, analytics
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to MongoDB and set up indexes
-    await connect_to_mongo()
+    # Startup: Connect to MongoDB and set up indexes safely
     try:
+        await connect_to_mongo()
         if db_instance.db is not None:
             count = await db_instance.db.tickets.count_documents({})
             if count == 0:
@@ -24,7 +24,10 @@ async def lifespan(app: FastAPI):
         pass
     yield
     # Shutdown: Close database connections
-    await close_mongo_connection()
+    try:
+        await close_mongo_connection()
+    except Exception:
+        pass
 
 
 app = FastAPI(
@@ -49,22 +52,50 @@ app.add_middleware(
 app.include_router(tickets.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
 
-# Mount Static Files for Demo UI (Checks root ./static first, falls back to ./app/static)
-root_static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-app_static_dir = os.path.join(os.path.dirname(__file__), "static")
-static_dir = root_static_dir if os.path.exists(root_static_dir) else app_static_dir
+# Static directory resolution
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+root_static_dir = os.path.join(root_dir, "static")
+app_static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+if os.path.exists(root_static_dir):
+    app.mount("/static", StaticFiles(directory=root_static_dir), name="static")
+elif os.path.exists(app_static_dir):
+    app.mount("/static", StaticFiles(directory=app_static_dir), name="static")
 
 
 @app.get("/", include_in_schema=False)
 async def serve_demo_ui():
     """Serves the interactive live demo dashboard."""
-    index_file = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
+    for candidate in [
+        os.path.join(root_dir, "index.html"),
+        os.path.join(root_static_dir, "index.html"),
+        os.path.join(app_static_dir, "index.html"),
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate)
     return {"message": "IntelliTicket API is running. Visit /docs for Swagger UI."}
+
+
+@app.get("/style.css", include_in_schema=False)
+async def serve_style():
+    for candidate in [
+        os.path.join(root_dir, "style.css"),
+        os.path.join(root_static_dir, "style.css"),
+        os.path.join(app_static_dir, "style.css"),
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate, media_type="text/css")
+
+
+@app.get("/app.js", include_in_schema=False)
+async def serve_app_js():
+    for candidate in [
+        os.path.join(root_dir, "app.js"),
+        os.path.join(root_static_dir, "app.js"),
+        os.path.join(app_static_dir, "app.js"),
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate, media_type="application/javascript")
 
 
 @app.get("/health", tags=["System"])
