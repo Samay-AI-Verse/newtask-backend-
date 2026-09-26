@@ -1,6 +1,6 @@
 /**
  * IntelliTicket - Smarter Tickets. Faster Solutions.
- * Complete Enterprise Multi-Page Controller & MongoDB Connector
+ * Application Controller & Multi-Page View Routing
  */
 
 // Application State
@@ -178,7 +178,6 @@ function navigateToView(viewId) {
   refreshIcons();
 }
 
-// Backward-compatible wrapper
 function switchSidebarTab(tabName, el) {
   navigateToView(tabName);
 }
@@ -261,7 +260,6 @@ async function loadTickets() {
     renderMyTicketsView();
     renderReportsView();
 
-    // If on analytics view, refresh analytics charts
     if (state.currentView === 'analytics') {
       renderAnalyticsView();
     }
@@ -320,7 +318,6 @@ function updateKPICards(stats) {
   setTxt('all-tab-p3-cnt', stats.p3_medium_count);
   setTxt('all-tab-p4-cnt', stats.p4_low_count);
 
-  // Update legend counts
   const total = stats.total_tickets || 1;
   const p1Pct = Math.round(((stats.p1_critical_count || 0) / total) * 100);
   const p2Pct = Math.round(((stats.p2_high_count || 0) / total) * 100);
@@ -332,7 +329,6 @@ function updateKPICards(stats) {
   setTxt('legend-p3-stat', `${stats.p3_medium_count || 0} (${p3Pct}%)`);
   setTxt('legend-p4-stat', `${stats.p4_low_count || 0} (${p4Pct}%)`);
 
-  // SLA Stats
   const onTime = stats.sla_on_time_count !== undefined ? stats.sla_on_time_count : Math.max(0, total - 2);
   const atRisk = stats.sla_at_risk_count !== undefined ? stats.sla_at_risk_count : 2;
   const breached = stats.sla_breached_count !== undefined ? stats.sla_breached_count : 0;
@@ -415,7 +411,6 @@ function renderAllTicketsView() {
   const kanban = document.getElementById('all-tickets-kanban-container');
   if (!tbody || !kanban) return;
 
-  // Filter tickets
   let filtered = [...state.tickets];
 
   // Search filter
@@ -459,7 +454,6 @@ function renderAllTicketsView() {
     tbody.innerHTML = `
       <tr>
         <td colspan="9" style="text-align:center; padding: 40px; color: var(--text-muted);">
-          <i data-lucide="inbox" style="width:36px; height:36px; margin: 0 auto 8px auto; color:#cbd5e1; display:block;"></i>
           <div style="font-size: 14px; font-weight:700;">No matching tickets found</div>
           <div style="font-size: 12px; margin-top: 4px;">Try clearing filters or search keywords.</div>
         </td>
@@ -591,7 +585,6 @@ function renderMyTicketsView() {
   const tabCnt = document.getElementById('my-tab-all-cnt');
   if (!tbody) return;
 
-  // Filter tickets that belong to Admin / assigned or relevant
   let myTickets = state.tickets.filter(t => {
     return t.assigned_to === 'Admin' || 
            t.requester?.name?.toLowerCase().includes('sarah') || 
@@ -606,7 +599,6 @@ function renderMyTicketsView() {
   if (countEl) countEl.innerText = myTickets.length;
   if (tabCnt) tabCnt.innerText = myTickets.length;
 
-  // Sub tab filter
   let displayTickets = [...myTickets];
   if (state.myTicketsFilter === 'IN_PROGRESS') {
     displayTickets = displayTickets.filter(t => t.status === 'IN_PROGRESS');
@@ -720,7 +712,6 @@ function renderAnalyticsCharts() {
   if (ctxCat) {
     if (state.charts.analyticsCategories) state.charts.analyticsCategories.destroy();
     
-    // Aggregate category counts
     const catMap = {};
     tickets.forEach(t => {
       const c = t.category || 'General';
@@ -890,7 +881,6 @@ function exportTicketsJSON() {
 // =========================================================
 
 function renderSettingsView() {
-  // Load saved settings if any
   const savedAppName = localStorage.getItem('it_app_name');
   if (savedAppName) {
     const el = document.getElementById('setting-app-name');
@@ -1062,7 +1052,6 @@ function simulateScoring(mode = 'modal') {
     badgeStyle = '#3b82f6';
   }
 
-  // Update UI Elements
   if (mode === 'modal') {
     const scoreText = document.getElementById('preview-score-text');
     const bar = document.getElementById('preview-progress-bar');
